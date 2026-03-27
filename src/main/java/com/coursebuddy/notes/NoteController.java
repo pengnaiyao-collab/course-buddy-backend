@@ -19,12 +19,15 @@ import org.springframework.web.bind.annotation.*;
 public class NoteController {
 
     private final NoteService noteService;
+    private final NoteMapper noteMapper;
 
     @Operation(summary = "Create a note", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<NoteResponse> create(@Valid @RequestBody NoteRequest request) {
-        return ApiResponse.success("Note created successfully", noteService.create(request));
+        Note entity = noteMapper.toEntityFromRequest(request);
+        Note saved = noteService.create(entity);
+        return ApiResponse.success("Note created successfully", noteMapper.toDto(saved));
     }
 
     @Operation(summary = "List my notes", security = @SecurityRequirement(name = "bearerAuth"))
@@ -32,13 +35,14 @@ public class NoteController {
     public ApiResponse<Page<NoteResponse>> list(
             @RequestParam(required = false) Long courseId,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(noteService.listMyNotes(courseId, pageable));
+        Page<Note> page = noteService.listMyNotes(courseId, pageable);
+        return ApiResponse.success(page.map(noteMapper::toDto));
     }
 
     @Operation(summary = "Get a note by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{id}")
     public ApiResponse<NoteResponse> getById(@PathVariable Long id) {
-        return ApiResponse.success(noteService.getById(id));
+        return ApiResponse.success(noteMapper.toDto(noteService.getById(id)));
     }
 
     @Operation(summary = "Update a note", security = @SecurityRequirement(name = "bearerAuth"))
@@ -46,7 +50,9 @@ public class NoteController {
     public ApiResponse<NoteResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody NoteRequest request) {
-        return ApiResponse.success(noteService.update(id, request));
+        Note entity = noteMapper.toEntityFromRequest(request);
+        Note updated = noteService.update(id, entity);
+        return ApiResponse.success(noteMapper.toDto(updated));
     }
 
     @Operation(summary = "Delete a note", security = @SecurityRequirement(name = "bearerAuth"))
@@ -61,6 +67,7 @@ public class NoteController {
     public ApiResponse<Page<NoteResponse>> search(
             @RequestParam String keyword,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(noteService.search(keyword, pageable));
+        Page<Note> page = noteService.search(keyword, pageable);
+        return ApiResponse.success(page.map(noteMapper::toDto));
     }
 }

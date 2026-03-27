@@ -16,43 +16,35 @@ public class KnowledgeBaseService {
     private final KnowledgeItemRepository repository;
 
     @Transactional
-    public KnowledgeItemResponse create(Long courseId, KnowledgeItemRequest request) {
+    public KnowledgeItem create(Long courseId, KnowledgeItem item) {
         User currentUser = getCurrentUser();
-        KnowledgeItem item = KnowledgeItem.builder()
-                .courseId(courseId)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .fileUrl(request.getFileUrl())
-                .fileType(request.getFileType())
-                .category(request.getCategory())
-                .tags(request.getTags())
-                .createdBy(currentUser.getId())
-                .build();
-        return KnowledgeItemResponse.from(repository.save(item));
+        item.setCourseId(courseId);
+        item.setCreatedBy(currentUser.getId());
+        return repository.save(item);
     }
 
     @Transactional(readOnly = true)
-    public Page<KnowledgeItemResponse> listByCourse(Long courseId, Pageable pageable) {
-        return repository.findByCourseId(courseId, pageable).map(KnowledgeItemResponse::from);
+    public Page<KnowledgeItem> listByCourse(Long courseId, Pageable pageable) {
+        return repository.findByCourseId(courseId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public KnowledgeItemResponse getById(Long id) {
-        return KnowledgeItemResponse.from(repository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Knowledge item not found")));
+    public KnowledgeItem getById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new BusinessException(404, "Knowledge item not found"));
     }
 
     @Transactional
-    public KnowledgeItemResponse update(Long id, KnowledgeItemRequest request) {
-        KnowledgeItem item = repository.findById(id)
+    public KnowledgeItem update(Long id, KnowledgeItem item) {
+        KnowledgeItem existing = repository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Knowledge item not found"));
-        item.setTitle(request.getTitle());
-        item.setDescription(request.getDescription());
-        item.setFileUrl(request.getFileUrl());
-        item.setFileType(request.getFileType());
-        item.setCategory(request.getCategory());
-        item.setTags(request.getTags());
-        return KnowledgeItemResponse.from(repository.save(item));
+        existing.setTitle(item.getTitle());
+        existing.setDescription(item.getDescription());
+        existing.setFileUrl(item.getFileUrl());
+        existing.setFileType(item.getFileType());
+        existing.setCategory(item.getCategory());
+        existing.setTags(item.getTags());
+        return repository.save(existing);
     }
 
     @Transactional
@@ -64,9 +56,8 @@ public class KnowledgeBaseService {
     }
 
     @Transactional(readOnly = true)
-    public Page<KnowledgeItemResponse> search(Long courseId, String keyword, Pageable pageable) {
-        return repository.findByCourseIdAndTitleContainingIgnoreCase(courseId, keyword, pageable)
-                .map(KnowledgeItemResponse::from);
+    public Page<KnowledgeItem> search(Long courseId, String keyword, Pageable pageable) {
+        return repository.findByCourseIdAndTitleContainingIgnoreCase(courseId, keyword, pageable);
     }
 
     private User getCurrentUser() {

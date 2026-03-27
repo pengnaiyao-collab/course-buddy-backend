@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService service;
+    private final KnowledgeItemMapper mapper;
 
     @Operation(summary = "Create a knowledge item", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
@@ -26,7 +27,9 @@ public class KnowledgeBaseController {
     public ApiResponse<KnowledgeItemResponse> create(
             @PathVariable Long courseId,
             @Valid @RequestBody KnowledgeItemRequest request) {
-        return ApiResponse.success("Knowledge item created successfully", service.create(courseId, request));
+        KnowledgeItem entity = mapper.toEntityFromRequest(request);
+        KnowledgeItem saved = service.create(courseId, entity);
+        return ApiResponse.success("Knowledge item created successfully", mapper.toDto(saved));
     }
 
     @Operation(summary = "List knowledge items for a course", security = @SecurityRequirement(name = "bearerAuth"))
@@ -34,13 +37,14 @@ public class KnowledgeBaseController {
     public ApiResponse<Page<KnowledgeItemResponse>> list(
             @PathVariable Long courseId,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(service.listByCourse(courseId, pageable));
+        Page<KnowledgeItem> page = service.listByCourse(courseId, pageable);
+        return ApiResponse.success(page.map(mapper::toDto));
     }
 
     @Operation(summary = "Get a knowledge item by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{id}")
     public ApiResponse<KnowledgeItemResponse> getById(@PathVariable Long id) {
-        return ApiResponse.success(service.getById(id));
+        return ApiResponse.success(mapper.toDto(service.getById(id)));
     }
 
     @Operation(summary = "Update a knowledge item", security = @SecurityRequirement(name = "bearerAuth"))
@@ -48,7 +52,9 @@ public class KnowledgeBaseController {
     public ApiResponse<KnowledgeItemResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody KnowledgeItemRequest request) {
-        return ApiResponse.success(service.update(id, request));
+        KnowledgeItem entity = mapper.toEntityFromRequest(request);
+        KnowledgeItem updated = service.update(id, entity);
+        return ApiResponse.success(mapper.toDto(updated));
     }
 
     @Operation(summary = "Delete a knowledge item", security = @SecurityRequirement(name = "bearerAuth"))
@@ -64,6 +70,7 @@ public class KnowledgeBaseController {
             @PathVariable Long courseId,
             @RequestParam String keyword,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(service.search(courseId, keyword, pageable));
+        Page<KnowledgeItem> page = service.search(courseId, keyword, pageable);
+        return ApiResponse.success(page.map(mapper::toDto));
     }
 }

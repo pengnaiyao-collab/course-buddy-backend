@@ -19,25 +19,30 @@ import org.springframework.web.bind.annotation.*;
 public class CollaborationController {
 
     private final CollaborationService service;
+    private final CollaborationProjectMapper projectMapper;
+    private final CollaborationTaskMapper taskMapper;
 
     @Operation(summary = "Create a collaboration project", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/projects")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<ProjectResponse> createProject(@Valid @RequestBody ProjectRequest request) {
-        return ApiResponse.success("Project created successfully", service.createProject(request));
+        CollaborationProject entity = projectMapper.toEntityFromRequest(request);
+        CollaborationProject saved = service.createProject(entity);
+        return ApiResponse.success("Project created successfully", projectMapper.toDto(saved));
     }
 
     @Operation(summary = "List my collaboration projects", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/projects")
     public ApiResponse<Page<ProjectResponse>> listProjects(
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(service.listProjects(pageable));
+        Page<CollaborationProject> page = service.listProjects(pageable);
+        return ApiResponse.success(page.map(projectMapper::toDto));
     }
 
     @Operation(summary = "Get a project by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/projects/{id}")
     public ApiResponse<ProjectResponse> getProject(@PathVariable Long id) {
-        return ApiResponse.success(service.getProject(id));
+        return ApiResponse.success(projectMapper.toDto(service.getProject(id)));
     }
 
     @Operation(summary = "Update a project", security = @SecurityRequirement(name = "bearerAuth"))
@@ -45,7 +50,9 @@ public class CollaborationController {
     public ApiResponse<ProjectResponse> updateProject(
             @PathVariable Long id,
             @Valid @RequestBody ProjectRequest request) {
-        return ApiResponse.success(service.updateProject(id, request));
+        CollaborationProject entity = projectMapper.toEntityFromRequest(request);
+        CollaborationProject updated = service.updateProject(id, entity);
+        return ApiResponse.success(projectMapper.toDto(updated));
     }
 
     @Operation(summary = "Delete a project", security = @SecurityRequirement(name = "bearerAuth"))
@@ -61,7 +68,9 @@ public class CollaborationController {
     public ApiResponse<TaskResponse> createTask(
             @PathVariable Long projectId,
             @Valid @RequestBody TaskRequest request) {
-        return ApiResponse.success("Task created successfully", service.createTask(projectId, request));
+        CollaborationTask entity = taskMapper.toEntityFromRequest(request);
+        CollaborationTask saved = service.createTask(projectId, entity);
+        return ApiResponse.success("Task created successfully", taskMapper.toDto(saved));
     }
 
     @Operation(summary = "List tasks in a project", security = @SecurityRequirement(name = "bearerAuth"))
@@ -69,13 +78,14 @@ public class CollaborationController {
     public ApiResponse<Page<TaskResponse>> listTasks(
             @PathVariable Long projectId,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(service.listTasksByProject(projectId, pageable));
+        Page<CollaborationTask> page = service.listTasksByProject(projectId, pageable);
+        return ApiResponse.success(page.map(taskMapper::toDto));
     }
 
     @Operation(summary = "Get a task by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/tasks/{id}")
     public ApiResponse<TaskResponse> getTask(@PathVariable Long id) {
-        return ApiResponse.success(service.getTask(id));
+        return ApiResponse.success(taskMapper.toDto(service.getTask(id)));
     }
 
     @Operation(summary = "Update a task", security = @SecurityRequirement(name = "bearerAuth"))
@@ -83,7 +93,9 @@ public class CollaborationController {
     public ApiResponse<TaskResponse> updateTask(
             @PathVariable Long id,
             @Valid @RequestBody TaskRequest request) {
-        return ApiResponse.success(service.updateTask(id, request));
+        CollaborationTask entity = taskMapper.toEntityFromRequest(request);
+        CollaborationTask updated = service.updateTask(id, entity);
+        return ApiResponse.success(taskMapper.toDto(updated));
     }
 
     @Operation(summary = "Delete a task", security = @SecurityRequirement(name = "bearerAuth"))
