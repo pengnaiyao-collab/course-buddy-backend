@@ -44,16 +44,41 @@ public class XunFeiSparkClient {
      *
      * @param messages 对话消息列表，每条消息包含 role 和 content
      * @param userId   用户标识
-     * @return 模型完整回复文本
+     * @return 包含回复文本和 token 统计的结果对象
      */
-    public String chat(List<Map<String, String>> messages, String userId) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        chatAsync(messages, userId, future);
+    public SparkChatResult chat(List<Map<String, String>> messages, String userId) {
+        CompletableFuture<SparkChatResult> future = new CompletableFuture<>();
+
+        StringBuilder responseBuilder = new StringBuilder();
+        chatStream(messages, userId, new SparkStreamListener() {
+            @Override
+            public void onToken(String token) {
+                responseBuilder.append(token);
+            }
+
+            @Override
+            public void onComplete(int promptTokens, int completionTokens) {
+                future.complete(new SparkChatResult(responseBuilder.toString(), promptTokens, completionTokens));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);
+            }
+        });
+
         try {
             return future.get(properties.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             log.error("XunFei Spark synchronous chat failed", e);
             throw new RuntimeException("XunFei Spark chat request failed: " + e.getMessage(), e);
+        }
+    }
+
+    /** 同步对话结果，包含回复文本和 token 使用量 */
+    public record SparkChatResult(String content, int promptTokens, int completionTokens) {
+        public int totalTokens() {
+            return promptTokens + completionTokens;
         }
     }
 
@@ -133,28 +158,6 @@ public class XunFeiSparkClient {
             @Override
             public void onClosed(WebSocket webSocket, int code, String reason) {
                 log.debug("XunFei Spark WebSocket closed: code={}, reason={}", code, reason);
-            }
-        });
-    }
-
-    private void chatAsync(List<Map<String, String>> messages, String userId,
-                           CompletableFuture<String> future) {
-        StringBuilder responseBuilder = new StringBuilder();
-
-        chatStream(messages, userId, new SparkStreamListener() {
-            @Override
-            public void onToken(String token) {
-                responseBuilder.append(token);
-            }
-
-            @Override
-            public void onComplete(int promptTokens, int completionTokens) {
-                future.complete(responseBuilder.toString());
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                future.completeExceptionally(t);
             }
         });
     }

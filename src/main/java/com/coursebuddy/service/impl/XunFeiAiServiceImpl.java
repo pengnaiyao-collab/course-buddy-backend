@@ -18,6 +18,7 @@ import com.coursebuddy.repository.AiUsageStatsRepository;
 import com.coursebuddy.repository.ConversationMessageRepository;
 import com.coursebuddy.repository.ConversationRepository;
 import com.coursebuddy.service.IXunFeiAiService;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -49,6 +50,19 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
     private static final int MAX_CONTEXT_MESSAGES = 20;
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
+    @PreDestroy
+    public void shutdownExecutor() {
+        sseExecutor.shutdown();
+        try {
+            if (!sseExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                sseExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            sseExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
+
     @Override
     @Transactional
     public ChatResponseVO chat(ChatRequestDTO dto) {
@@ -60,10 +74,9 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
 
         List<Map<String, String>> messages = buildMessageContext(conversation.getId(), dto.getMessage());
 
-        String answer;
-        int[] tokens = {0, 0};
+        XunFeiSparkClient.SparkChatResult result;
         try {
-            answer = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
+            result = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
         } catch (Exception e) {
             log.error("XunFei chat failed for user {}", currentUser.getId(), e);
             recordUsageStats(currentUser.getId(), requestType, 0, 0,
@@ -74,7 +87,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
         // Save user message
         saveMessage(conversation.getId(), "user", dto.getMessage(), null);
         // Save assistant message
-        saveMessage(conversation.getId(), "assistant", answer, null);
+        saveMessage(conversation.getId(), "assistant", result.content(), null);
 
         // Update conversation title if new
         if (conversation.getTitle() == null || conversation.getTitle().isBlank()) {
@@ -85,7 +98,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
             conversationRepository.save(conversation);
         }
 
-        recordUsageStats(currentUser.getId(), requestType, tokens[0], tokens[1],
+        recordUsageStats(currentUser.getId(), requestType, result.promptTokens(), result.completionTokens(),
                 System.currentTimeMillis() - startTime, "SUCCESS", null);
 
         List<ChatMessageVO> msgVOs = conversationMapper.messagePoListToVoList(
@@ -94,7 +107,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
         return ChatResponseVO.builder()
                 .conversationId(conversation.getId())
                 .title(conversation.getTitle())
-                .answer(answer)
+                .answer(result.content())
                 .messages(msgVOs)
                 .createdAt(conversation.getCreatedAt())
                 .build();
@@ -206,8 +219,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
         if (!conversation.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "无权删除该对话");
         }
-        messageRepository.deleteAll(
-                messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId));
+        messageRepository.deleteByConversationId(conversationId);
         conversationRepository.delete(conversation);
     }
 

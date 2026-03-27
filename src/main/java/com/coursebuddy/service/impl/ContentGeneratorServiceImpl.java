@@ -83,14 +83,15 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
 
         try {
             List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", prompt));
-            String answer = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
+            XunFeiSparkClient.SparkChatResult result = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
 
-            po.setContent(answer);
+            po.setContent(result.content());
             po.setStatus("COMPLETED");
+            po.setTokenCount(result.totalTokens());
             po = contentRepository.save(po);
 
-            recordUsageStats(currentUser.getId(), dto.getContentType(), 0, 0,
-                    System.currentTimeMillis() - startTime, "SUCCESS", null);
+            recordUsageStats(currentUser.getId(), dto.getContentType(), result.promptTokens(),
+                    result.completionTokens(), System.currentTimeMillis() - startTime, "SUCCESS", null);
 
             return contentMapper.poToVo(po);
 

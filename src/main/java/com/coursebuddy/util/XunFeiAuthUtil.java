@@ -67,16 +67,21 @@ public class XunFeiAuthUtil {
         return sdf.format(new Date());
     }
 
+    /** Strips the scheme prefix (wss://, ws://, https://, http://) from a URL */
+    private String stripScheme(String url) {
+        return url.replaceFirst("^(wss?|https?)://", "");
+    }
+
     private String extractHost(String endpoint) {
         // e.g. wss://spark-api.xf-yun.com/v3.5/chat -> spark-api.xf-yun.com
-        String withoutScheme = endpoint.replaceFirst("^wss?://", "").replaceFirst("^https?://", "");
+        String withoutScheme = stripScheme(endpoint);
         int slashIdx = withoutScheme.indexOf('/');
         return slashIdx > 0 ? withoutScheme.substring(0, slashIdx) : withoutScheme;
     }
 
     private String extractPath(String endpoint) {
         // e.g. wss://spark-api.xf-yun.com/v3.5/chat -> /v3.5/chat
-        String withoutScheme = endpoint.replaceFirst("^wss?://", "").replaceFirst("^https?://", "");
+        String withoutScheme = stripScheme(endpoint);
         int slashIdx = withoutScheme.indexOf('/');
         return slashIdx >= 0 ? withoutScheme.substring(slashIdx) : "/";
     }
