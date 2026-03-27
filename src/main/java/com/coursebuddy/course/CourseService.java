@@ -1,7 +1,7 @@
 package com.coursebuddy.course;
 
 import com.coursebuddy.auth.User;
-import com.coursebuddy.auth.UserRepository;
+import com.coursebuddy.auth.AuthUserRepository;
 import com.coursebuddy.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseService {
 
     private final CourseRepository courseRepository;
-    private final UserRepository userRepository;
+    private final AuthUserRepository userRepository;
 
     public Page<CourseResponse> listPublished(String keyword, Pageable pageable) {
         if (keyword != null && !keyword.isBlank()) {
