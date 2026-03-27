@@ -1,0 +1,53 @@
+package com.coursebuddy;
+
+import com.coursebuddy.auth.JwtUtil;
+import com.coursebuddy.auth.Role;
+import com.coursebuddy.auth.User;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+@TestPropertySource(properties = {
+        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.flyway.enabled=false",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration",
+        "jwt.secret=test-secret-key-for-unit-tests-minimum-32-chars-long",
+        "jwt.expiration=3600000"
+})
+class CourseBuddyApplicationTest {
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Test
+    void contextLoads() {
+        assertThat(jwtUtil).isNotNull();
+    }
+
+    @Test
+    void jwtTokenGenerationAndValidation() {
+        User user = User.builder()
+                .id(1L)
+                .username("testuser")
+                .email("test@example.com")
+                .password("encodedPassword")
+                .role(Role.STUDENT)
+                .build();
+
+        String token = jwtUtil.generateToken(user);
+        assertThat(token).isNotBlank();
+
+        String extractedUsername = jwtUtil.extractUsername(token);
+        assertThat(extractedUsername).isEqualTo("testuser");
+
+        assertThat(jwtUtil.validateToken(token, user)).isTrue();
+    }
+}
