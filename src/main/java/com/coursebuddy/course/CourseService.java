@@ -2,7 +2,7 @@ package com.coursebuddy.course;
 
 import com.coursebuddy.auth.User;
 import com.coursebuddy.auth.UserRepository;
-import com.coursebuddy.common.BusinessException;
+import com.coursebuddy.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

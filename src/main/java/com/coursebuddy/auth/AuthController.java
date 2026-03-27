@@ -1,6 +1,6 @@
 package com.coursebuddy.auth;
 
-import com.coursebuddy.common.ApiResponse;
+import com.coursebuddy.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

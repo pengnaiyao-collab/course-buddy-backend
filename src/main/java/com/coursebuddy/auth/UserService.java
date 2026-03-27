@@ -1,6 +1,6 @@
 package com.coursebuddy.auth;
 
-import com.coursebuddy.common.BusinessException;
+import com.coursebuddy.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

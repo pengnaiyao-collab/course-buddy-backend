@@ -1,6 +1,6 @@
 package com.coursebuddy.course;
 
-import com.coursebuddy.common.ApiResponse;
+import com.coursebuddy.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
