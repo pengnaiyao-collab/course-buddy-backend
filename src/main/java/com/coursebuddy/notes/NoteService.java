@@ -16,53 +16,45 @@ public class NoteService {
     private final NoteRepository noteRepository;
 
     @Transactional
-    public NoteResponse create(NoteRequest request) {
+    public Note create(Note note) {
         User currentUser = getCurrentUser();
-        Note note = Note.builder()
-                .userId(currentUser.getId())
-                .courseId(request.getCourseId())
-                .title(request.getTitle())
-                .content(request.getContent())
-                .category(request.getCategory())
-                .tags(request.getTags())
-                .build();
-        return NoteResponse.from(noteRepository.save(note));
+        note.setUserId(currentUser.getId());
+        return noteRepository.save(note);
     }
 
     @Transactional(readOnly = true)
-    public Page<NoteResponse> listMyNotes(Long courseId, Pageable pageable) {
+    public Page<Note> listMyNotes(Long courseId, Pageable pageable) {
         User currentUser = getCurrentUser();
         if (courseId != null) {
-            return noteRepository.findByUserIdAndCourseId(currentUser.getId(), courseId, pageable)
-                    .map(NoteResponse::from);
+            return noteRepository.findByUserIdAndCourseId(currentUser.getId(), courseId, pageable);
         }
-        return noteRepository.findByUserId(currentUser.getId(), pageable).map(NoteResponse::from);
+        return noteRepository.findByUserId(currentUser.getId(), pageable);
     }
 
     @Transactional(readOnly = true)
-    public NoteResponse getById(Long id) {
+    public Note getById(Long id) {
         User currentUser = getCurrentUser();
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Note not found"));
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to view this note");
         }
-        return NoteResponse.from(note);
+        return note;
     }
 
     @Transactional
-    public NoteResponse update(Long id, NoteRequest request) {
+    public Note update(Long id, Note item) {
         User currentUser = getCurrentUser();
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Note not found"));
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to update this note");
         }
-        note.setTitle(request.getTitle());
-        note.setContent(request.getContent());
-        if (request.getCategory() != null) note.setCategory(request.getCategory());
-        if (request.getTags() != null) note.setTags(request.getTags());
-        return NoteResponse.from(noteRepository.save(note));
+        note.setTitle(item.getTitle());
+        note.setContent(item.getContent());
+        if (item.getCategory() != null) note.setCategory(item.getCategory());
+        if (item.getTags() != null) note.setTags(item.getTags());
+        return noteRepository.save(note);
     }
 
     @Transactional
@@ -77,10 +69,9 @@ public class NoteService {
     }
 
     @Transactional(readOnly = true)
-    public Page<NoteResponse> search(String keyword, Pageable pageable) {
+    public Page<Note> search(String keyword, Pageable pageable) {
         User currentUser = getCurrentUser();
-        return noteRepository.findByUserIdAndTitleContainingIgnoreCase(currentUser.getId(), keyword, pageable)
-                .map(NoteResponse::from);
+        return noteRepository.findByUserIdAndTitleContainingIgnoreCase(currentUser.getId(), keyword, pageable);
     }
 
     private User getCurrentUser() {

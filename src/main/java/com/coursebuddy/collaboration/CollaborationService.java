@@ -17,42 +17,37 @@ public class CollaborationService {
     private final CollaborationTaskRepository taskRepository;
 
     @Transactional
-    public ProjectResponse createProject(ProjectRequest request) {
+    public CollaborationProject createProject(CollaborationProject project) {
         User currentUser = getCurrentUser();
-        CollaborationProject project = CollaborationProject.builder()
-                .courseId(request.getCourseId())
-                .name(request.getName())
-                .description(request.getDescription())
-                .ownerId(currentUser.getId())
-                .status(request.getStatus() != null ? request.getStatus() : "ACTIVE")
-                .build();
-        return ProjectResponse.from(projectRepository.save(project));
+        project.setOwnerId(currentUser.getId());
+        if (project.getStatus() == null) project.setStatus("ACTIVE");
+        return projectRepository.save(project);
     }
 
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> listProjects(Pageable pageable) {
+    public Page<CollaborationProject> listProjects(Pageable pageable) {
         User currentUser = getCurrentUser();
-        return projectRepository.findByOwnerId(currentUser.getId(), pageable).map(ProjectResponse::from);
+        return projectRepository.findByOwnerId(currentUser.getId(), pageable);
     }
 
     @Transactional(readOnly = true)
-    public ProjectResponse getProject(Long id) {
-        return ProjectResponse.from(projectRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Project not found")));
+    public CollaborationProject getProject(Long id) {
+        return projectRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(404, "Project not found"));
     }
 
     @Transactional
-    public ProjectResponse updateProject(Long id, ProjectRequest request) {
+    public CollaborationProject updateProject(Long id, CollaborationProject item) {
         User currentUser = getCurrentUser();
         CollaborationProject project = projectRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Project not found"));
         if (!project.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to update this project");
         }
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        if (request.getStatus() != null) project.setStatus(request.getStatus());
-        return ProjectResponse.from(projectRepository.save(project));
+        project.setName(item.getName());
+        project.setDescription(item.getDescription());
+        if (item.getStatus() != null) project.setStatus(item.getStatus());
+        return projectRepository.save(project);
     }
 
     @Transactional
@@ -67,47 +62,41 @@ public class CollaborationService {
     }
 
     @Transactional
-    public TaskResponse createTask(Long projectId, TaskRequest request) {
+    public CollaborationTask createTask(Long projectId, CollaborationTask task) {
         if (!projectRepository.existsById(projectId)) {
             throw new BusinessException(404, "Project not found");
         }
-        CollaborationTask task = CollaborationTask.builder()
-                .projectId(projectId)
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .assigneeId(request.getAssigneeId())
-                .status(request.getStatus() != null ? request.getStatus() : "TODO")
-                .priority(request.getPriority() != null ? request.getPriority() : "MEDIUM")
-                .dueDate(request.getDueDate())
-                .build();
-        return TaskResponse.from(taskRepository.save(task));
+        task.setProjectId(projectId);
+        if (task.getStatus() == null) task.setStatus("TODO");
+        if (task.getPriority() == null) task.setPriority("MEDIUM");
+        return taskRepository.save(task);
     }
 
     @Transactional(readOnly = true)
-    public Page<TaskResponse> listTasksByProject(Long projectId, Pageable pageable) {
+    public Page<CollaborationTask> listTasksByProject(Long projectId, Pageable pageable) {
         if (!projectRepository.existsById(projectId)) {
             throw new BusinessException(404, "Project not found");
         }
-        return taskRepository.findByProjectId(projectId, pageable).map(TaskResponse::from);
+        return taskRepository.findByProjectId(projectId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public TaskResponse getTask(Long id) {
-        return TaskResponse.from(taskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Task not found")));
+    public CollaborationTask getTask(Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(404, "Task not found"));
     }
 
     @Transactional
-    public TaskResponse updateTask(Long id, TaskRequest request) {
+    public CollaborationTask updateTask(Long id, CollaborationTask item) {
         CollaborationTask task = taskRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Task not found"));
-        task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        if (request.getAssigneeId() != null) task.setAssigneeId(request.getAssigneeId());
-        if (request.getStatus() != null) task.setStatus(request.getStatus());
-        if (request.getPriority() != null) task.setPriority(request.getPriority());
-        if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
-        return TaskResponse.from(taskRepository.save(task));
+        task.setTitle(item.getTitle());
+        task.setDescription(item.getDescription());
+        if (item.getAssigneeId() != null) task.setAssigneeId(item.getAssigneeId());
+        if (item.getStatus() != null) task.setStatus(item.getStatus());
+        if (item.getPriority() != null) task.setPriority(item.getPriority());
+        if (item.getDueDate() != null) task.setDueDate(item.getDueDate());
+        return taskRepository.save(task);
     }
 
     @Transactional
