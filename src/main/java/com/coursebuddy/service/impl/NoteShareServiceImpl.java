@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -58,8 +59,12 @@ public class NoteShareServiceImpl implements INoteShareService {
         if (!po.getIsActive()) {
             throw new BusinessException(410, "Share link is no longer active");
         }
+        if (po.getExpiresAt() != null && po.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(410, "Share link has expired");
+        }
+        noteShareRepository.incrementAccessCount(po.getId());
         po.setAccessCount(po.getAccessCount() + 1);
-        return noteShareMapper.poToVo(noteShareRepository.save(po));
+        return noteShareMapper.poToVo(po);
     }
 
     @Override

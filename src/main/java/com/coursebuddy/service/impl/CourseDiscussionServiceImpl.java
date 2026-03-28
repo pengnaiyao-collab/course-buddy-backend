@@ -90,8 +90,9 @@ public class CourseDiscussionServiceImpl implements ICourseDiscussionService {
     public CourseDiscussionVO like(Long id) {
         CourseDiscussionPO po = discussionRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(404, "Discussion not found"));
+        discussionRepository.incrementLikeCount(id);
         po.setLikeCount(po.getLikeCount() + 1);
-        return discussionMapper.poToVo(discussionRepository.save(po));
+        return discussionMapper.poToVo(po);
     }
 
     @Override

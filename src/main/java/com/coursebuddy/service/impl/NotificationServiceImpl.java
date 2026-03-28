@@ -36,7 +36,7 @@ public class NotificationServiceImpl implements INotificationService {
         User currentUser = SecurityUtils.getCurrentUser();
         if (isRead != null && type != null) {
             return notificationMapper.poPageToVoPage(
-                    notificationRepository.findByUserIdAndIsRead(currentUser.getId(), isRead, pageable));
+                    notificationRepository.findByUserIdAndIsReadAndType(currentUser.getId(), isRead, type, pageable));
         }
         if (isRead != null) {
             return notificationMapper.poPageToVoPage(
