@@ -29,6 +29,8 @@ public class NoteVO {
     private String tags;
     /** 关联标签 ID 列表。 */
     private List<Long> tagIds;
+    /** 是否公开分享。 */
+    private Boolean isPublic;
     /** 乐观锁版本号。 */
     private Long version;
     private LocalDateTime createdAt;
