@@ -23,4 +23,9 @@ public class CollaborationProjectDTO {
 
     @Size(max = 16, message = "Status must not exceed 16 characters")
     private String status;
+
+    @Size(max = 512, message = "Cover URL must not exceed 512 characters")
+    private String coverUrl;
+
+    private Boolean isPublic;
 }

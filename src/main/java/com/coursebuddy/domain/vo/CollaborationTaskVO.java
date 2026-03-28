@@ -19,9 +19,12 @@ public class CollaborationTaskVO {
     private String title;
     private String description;
     private Long assigneeId;
+    private Long creatorId;
     private String status;
     private String priority;
     private LocalDate dueDate;
+    private LocalDateTime completedAt;
+    private Integer progress;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

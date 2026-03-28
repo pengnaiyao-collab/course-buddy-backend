@@ -13,35 +13,28 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "collaboration_projects")
-public class CollaborationProjectPO {
+@Table(name = "task_comments")
+public class TaskCommentPO {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "course_id")
-    private Long courseId;
+    @Column(name = "task_id", nullable = false)
+    private Long taskId;
 
-    @Column(nullable = false, length = 256)
-    private String name;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
 
-    @Column(name = "owner_id", nullable = false)
-    private Long ownerId;
+    @Column(name = "attachment_url", length = 512)
+    private String attachmentUrl;
 
-    @Column(length = 16)
+    @Column(name = "is_edited")
     @Builder.Default
-    private String status = "ACTIVE";
-
-    @Column(name = "cover_url", length = 512)
-    private String coverUrl;
-
-    @Column(name = "is_public")
-    @Builder.Default
-    private Boolean isPublic = false;
+    private Boolean isEdited = false;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

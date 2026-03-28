@@ -19,6 +19,8 @@ public class CollaborationProjectMapper {
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .status(dto.getStatus())
+                .coverUrl(dto.getCoverUrl())
+                .isPublic(dto.getIsPublic())
                 .build();
     }
 
@@ -31,6 +33,8 @@ public class CollaborationProjectMapper {
                 .description(po.getDescription())
                 .ownerId(po.getOwnerId())
                 .status(po.getStatus())
+                .coverUrl(po.getCoverUrl())
+                .isPublic(po.getIsPublic())
                 .createdAt(po.getCreatedAt())
                 .updatedAt(po.getUpdatedAt())
                 .build();

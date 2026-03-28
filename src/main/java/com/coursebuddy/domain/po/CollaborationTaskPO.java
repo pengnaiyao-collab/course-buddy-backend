@@ -33,6 +33,9 @@ public class CollaborationTaskPO {
     @Column(name = "assignee_id")
     private Long assigneeId;
 
+    @Column(name = "creator_id")
+    private Long creatorId;
+
     @Column(length = 16)
     @Builder.Default
     private String status = "TODO";
@@ -43,6 +46,16 @@ public class CollaborationTaskPO {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
+    @Column(name = "progress")
+    @Builder.Default
+    private Integer progress = 0;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

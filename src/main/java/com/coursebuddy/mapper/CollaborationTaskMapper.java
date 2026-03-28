@@ -32,9 +32,12 @@ public class CollaborationTaskMapper {
                 .title(po.getTitle())
                 .description(po.getDescription())
                 .assigneeId(po.getAssigneeId())
+                .creatorId(po.getCreatorId())
                 .status(po.getStatus())
                 .priority(po.getPriority())
                 .dueDate(po.getDueDate())
+                .completedAt(po.getCompletedAt())
+                .progress(po.getProgress())
                 .createdAt(po.getCreatedAt())
                 .updatedAt(po.getUpdatedAt())
                 .build();

@@ -21,6 +21,8 @@ public class CollaborationTaskDTO {
 
     private String description;
 
+    private Long projectId;
+
     private Long assigneeId;
 
     @Size(max = 16, message = "Status must not exceed 16 characters")
