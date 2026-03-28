@@ -65,7 +65,10 @@ public class WebImportServiceImpl implements IWebImportService {
 
             String title = doc.title();
             String bodyText = Jsoup.clean(doc.body().html(), Safelist.none());
-            bodyText = bodyText.replaceAll("(?m)^[ \\t]*\\r?\\n", "").trim();
+            // Remove blank lines and normalize whitespace
+            bodyText = bodyText.replaceAll("(?m)^[ \\t]*\\r?\\n", "")
+                    .replaceAll("[ \\t]+", " ")
+                    .trim();
 
             po.setTitle(title);
             po.setContent(bodyText);
@@ -73,9 +76,11 @@ public class WebImportServiceImpl implements IWebImportService {
             po.setStatus("COMPLETED");
 
             if (dto.isCreateKnowledgeItem()) {
+                String description = bodyText.isBlank() ? dto.getUrl()
+                        : (bodyText.length() > 500 ? bodyText.substring(0, 500).trim() + "..." : bodyText);
                 KnowledgeItemDTO kid = KnowledgeItemDTO.builder()
                         .title(title != null && !title.isBlank() ? title : dto.getUrl())
-                        .description(bodyText.length() > 500 ? bodyText.substring(0, 500) + "..." : bodyText)
+                        .description(description)
                         .fileUrl(dto.getUrl())
                         .fileType("WEB_PAGE")
                         .category(dto.getCategory())

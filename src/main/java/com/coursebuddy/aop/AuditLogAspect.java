@@ -40,11 +40,11 @@ public class AuditLogAspect {
 
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof UserDetails ud) {
+            if (auth != null && auth.getPrincipal() instanceof com.coursebuddy.auth.User user) {
+                operatorId = user.getId();
+                operatorName = user.getUsername();
+            } else if (auth != null && auth.getPrincipal() instanceof UserDetails ud) {
                 operatorName = ud.getUsername();
-                if (auth.getPrincipal() instanceof com.coursebuddy.auth.User user) {
-                    operatorId = user.getId();
-                }
             }
         } catch (Exception ignored) {}
 
