@@ -61,5 +61,14 @@ ALTER TABLE knowledge_items
     ADD COLUMN IF NOT EXISTS source_type    VARCHAR(64) DEFAULT 'MANUAL' COMMENT 'MANUAL, FILE, WEB, OCR',
     ADD COLUMN IF NOT EXISTS status        VARCHAR(32) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED';
 
--- Full-text index on knowledge_items for search
-ALTER TABLE knowledge_items ADD FULLTEXT INDEX IF NOT EXISTS ft_knowledge_items_search (title, description, tags);
+-- Full-text index on knowledge_items for search (use DROP IF EXISTS + ADD pattern for idempotency)
+SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'knowledge_items'
+      AND INDEX_NAME = 'ft_knowledge_items_search');
+SET @sql = IF(@idx_exists = 0,
+    'ALTER TABLE knowledge_items ADD FULLTEXT INDEX ft_knowledge_items_search (title, description, tags)',
+    'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

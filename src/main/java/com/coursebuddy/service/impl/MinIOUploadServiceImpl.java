@@ -253,8 +253,8 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
 
     @Override
     public BatchUploadResultVO batchUpload(MultipartFile[] files) {
-        List<FileUploadResponse> successes = new ArrayList<>();
-        List<String> failures = new ArrayList<>();
+        List<FileUploadResponse> successes = new ArrayList<>(files.length);
+        List<String> failures = new ArrayList<>(files.length);
 
         for (MultipartFile file : files) {
             String originalName = file.getOriginalFilename() != null

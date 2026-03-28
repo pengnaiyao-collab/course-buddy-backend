@@ -75,8 +75,10 @@ public class VersionServiceImpl implements IVersionService {
         VersionPO va = getVersion(entityType, entityId, versionA);
         VersionPO vb = getVersion(entityType, entityId, versionB);
 
-        List<String> linesA = Arrays.asList(va.getContent().split("\\r?\\n", -1));
-        List<String> linesB = Arrays.asList(vb.getContent().split("\\r?\\n", -1));
+        String contentA = va.getContent() != null ? va.getContent() : "";
+        String contentB = vb.getContent() != null ? vb.getContent() : "";
+        List<String> linesA = Arrays.asList(contentA.split("\\r?\\n", -1));
+        List<String> linesB = Arrays.asList(contentB.split("\\r?\\n", -1));
 
         Patch<String> patch = DiffUtils.diff(linesA, linesB);
 
