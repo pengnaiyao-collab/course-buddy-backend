@@ -39,11 +39,24 @@ public class NotePO {
     @Column(name = "course_id")
     private Long courseId;
 
+    /** 所属分类 ID（外键，可选）。 */
+    @Column(name = "category_id")
+    private Long categoryId;
+
     @Column(nullable = false, length = 256)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    /** 笔记摘要/描述（可选）。 */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    /** 笔记状态：DRAFT（草稿）、PUBLISHED（已发布）、ARCHIVED（已归档）。 */
+    @Column(length = 16, nullable = false)
+    @Builder.Default
+    private String status = "DRAFT";
 
     @Column(length = 64)
     private String category;

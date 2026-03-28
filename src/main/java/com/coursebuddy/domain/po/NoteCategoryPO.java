@@ -26,6 +26,10 @@ public class NoteCategoryPO {
     @Column(nullable = false, length = 64)
     private String name;
 
+    /** 分类描述（可选）。 */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 16)
     private String color;
 
