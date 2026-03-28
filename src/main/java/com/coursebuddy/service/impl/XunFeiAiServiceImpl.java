@@ -283,7 +283,6 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
         return messages;
     }
 
-    @Transactional
     private void saveMessage(Long conversationId, String role, String content, Integer tokenCount) {
         ConversationMessagePO msg = ConversationMessagePO.builder()
                 .conversationId(conversationId)
