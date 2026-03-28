@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 笔记持久化对象。
+ *
+ * <p>使用 JPA 乐观锁（{@code @Version}）防止并发更新冲突。</p>
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,6 +24,14 @@ public class NotePO {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * 乐观锁版本号，由 JPA 自动维护。
+     */
+    @Version
+    @Column(name = "opt_lock_version", nullable = false)
+    @Builder.Default
+    private Long optLockVersion = 0L;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
