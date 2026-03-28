@@ -12,52 +12,37 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity(name = "UserPO")
-@Table(name = "users")
-public class UserPO {
+@Entity
+@Table(name = "teams")
+public class TeamPO {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 64)
-    private String username;
-
-    @Column(nullable = false, unique = true, length = 128)
-    private String email;
-
-    @Column(nullable = false)
-    private String password;
-
-    @Column(name = "real_name", length = 50)
-    private String realName;
-
-    @Column(length = 20)
-    private String phone;
+    @Column(nullable = false, length = 128)
+    private String name;
 
     @Column(columnDefinition = "TEXT")
-    private String avatar;
+    private String description;
 
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
-    @Column(columnDefinition = "TEXT")
-    private String bio;
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
-    @Column(name = "is_active")
-    private Boolean isActive = true;
+    @Column(name = "course_id")
+    private Long courseId;
 
-    @Column(name = "is_locked")
-    private Boolean isLocked = false;
+    @Column(name = "project_id")
+    private Long projectId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @Column(name = "last_login_at")
-    private LocalDateTime lastLoginAt;
 
     @PrePersist
     protected void onCreate() {
