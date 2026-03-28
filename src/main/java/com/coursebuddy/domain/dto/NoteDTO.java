@@ -43,6 +43,9 @@ public class NoteDTO {
     @Size(max = 256, message = "Tags must not exceed 256 characters")
     private String tags;
 
+    /** 是否公开分享（默认 false）。 */
+    private Boolean isPublic;
+
     /**
      * 关联标签 ID 列表（可选，用于多对多关联）。
      */

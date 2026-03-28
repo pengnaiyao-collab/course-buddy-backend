@@ -26,6 +26,7 @@ public class NoteCategoryMapper {
                 .id(po.getId())
                 .userId(po.getUserId())
                 .name(po.getName())
+                .description(po.getDescription())
                 .color(po.getColor())
                 .sortOrder(po.getSortOrder())
                 .createdAt(po.getCreatedAt())

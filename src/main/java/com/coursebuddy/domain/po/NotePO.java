@@ -67,6 +67,20 @@ public class NotePO {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 是否公开（可被分享链接访问）。 */
+    @Column(name = "is_public", nullable = false)
+    @Builder.Default
+    private Boolean isPublic = false;
+
+    /** 软删除标志。 */
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private Boolean isDeleted = false;
+
+    /** 软删除时间。 */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
