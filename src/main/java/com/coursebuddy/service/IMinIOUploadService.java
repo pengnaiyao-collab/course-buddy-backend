@@ -1,6 +1,7 @@
 package com.coursebuddy.service;
 
 import com.coursebuddy.domain.dto.InitUploadRequest;
+import com.coursebuddy.domain.vo.BatchUploadResultVO;
 import com.coursebuddy.domain.vo.ChunkUploadResponse;
 import com.coursebuddy.domain.vo.FileUploadResponse;
 import com.coursebuddy.domain.vo.InitUploadResponse;
@@ -26,4 +27,10 @@ public interface IMinIOUploadService {
     void deleteFile(String objectName) throws Exception;
 
     String getPreviewUrl(String objectName) throws Exception;
+
+    /**
+     * Upload multiple files at once. Each file is uploaded as a separate object.
+     * Returns a summary of successes and failures.
+     */
+    BatchUploadResultVO batchUpload(MultipartFile[] files);
 }

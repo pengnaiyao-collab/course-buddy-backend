@@ -3,6 +3,7 @@ package com.coursebuddy.controller;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.common.response.ApiResponse;
 import com.coursebuddy.domain.dto.InitUploadRequest;
+import com.coursebuddy.domain.vo.BatchUploadResultVO;
 import com.coursebuddy.service.IMinIOUploadService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -94,6 +95,13 @@ public class MinIOFileUploadController {
     public ApiResponse<String> getPreviewUrl(@RequestParam String objectName) throws Exception {
         validateObjectName(objectName);
         return ApiResponse.success(uploadService.getPreviewUrl(objectName));
+    }
+
+    @PostMapping("/upload/batch")
+    public ApiResponse<BatchUploadResultVO> batchUpload(
+            @RequestParam("files") MultipartFile[] files) {
+        log.info("Batch upload: {} files", files.length);
+        return ApiResponse.success("批量上传完成", uploadService.batchUpload(files));
     }
 
     private void validateObjectName(String objectName) {

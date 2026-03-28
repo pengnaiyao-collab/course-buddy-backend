@@ -4,6 +4,7 @@ import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.config.MinIOProperties;
 import com.coursebuddy.domain.dto.InitUploadRequest;
 import com.coursebuddy.domain.po.FileUploadPO;
+import com.coursebuddy.domain.vo.BatchUploadResultVO;
 import com.coursebuddy.domain.vo.ChunkUploadResponse;
 import com.coursebuddy.domain.vo.FileUploadResponse;
 import com.coursebuddy.domain.vo.InitUploadResponse;
@@ -248,5 +249,60 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
 
     private String buildFileUrl(String objectName) {
         return properties.getEndpoint() + "/" + properties.getBucketName() + "/" + objectName;
+    }
+
+    @Override
+    public BatchUploadResultVO batchUpload(MultipartFile[] files) {
+        List<FileUploadResponse> successes = new ArrayList<>(files.length);
+        List<String> failures = new ArrayList<>(files.length);
+
+        for (MultipartFile file : files) {
+            String originalName = file.getOriginalFilename() != null
+                    ? file.getOriginalFilename() : "unknown";
+            try {
+                String objectName = UploadSessionManager.generateObjectName(originalName);
+                String contentType = file.getContentType() != null
+                        ? file.getContentType() : "application/octet-stream";
+
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(properties.getBucketName())
+                        .object(objectName)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .contentType(contentType)
+                        .build());
+
+                FileUploadPO fileUpload = FileUploadPO.builder()
+                        .objectName(objectName)
+                        .fileName(originalName)
+                        .fileSize(file.getSize())
+                        .contentType(contentType)
+                        .uploadUrl(buildFileUrl(objectName))
+                        .uploadedAt(LocalDateTime.now())
+                        .build();
+                FileUploadPO saved = fileUploadRepository.save(fileUpload);
+
+                successes.add(FileUploadResponse.builder()
+                        .uploadId(saved.getId().toString())
+                        .objectName(objectName)
+                        .fileName(originalName)
+                        .fileSize(file.getSize())
+                        .uploadUrl(buildFileUrl(objectName))
+                        .status("completed")
+                        .build());
+
+                log.info("Batch upload: file {} uploaded as {}", originalName, objectName);
+            } catch (Exception e) {
+                log.error("Batch upload failed for file {}: {}", originalName, e.getMessage(), e);
+                failures.add(originalName + ": " + e.getMessage());
+            }
+        }
+
+        return BatchUploadResultVO.builder()
+                .totalFiles(files.length)
+                .successCount(successes.size())
+                .failureCount(failures.size())
+                .successResults(successes)
+                .failureMessages(failures)
+                .build();
     }
 }
