@@ -4,13 +4,18 @@ import com.coursebuddy.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.VersionPO;
+import com.coursebuddy.domain.vo.VersionDiffVO;
 import com.coursebuddy.repository.VersionRepository;
 import com.coursebuddy.service.IVersionService;
+import com.github.difflib.DiffUtils;
+import com.github.difflib.UnifiedDiffUtils;
+import com.github.difflib.patch.Patch;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -61,5 +66,35 @@ public class VersionServiceImpl implements IVersionService {
                 .findByEntityTypeAndEntityIdAndVersionNumber(entityType, entityId, versionNumber)
                 .orElseThrow(() -> new BusinessException(404,
                         "Version not found: " + entityType + "/" + entityId + "/v" + versionNumber));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VersionDiffVO compareVersions(String entityType, Long entityId,
+                                         int versionA, int versionB) {
+        VersionPO va = getVersion(entityType, entityId, versionA);
+        VersionPO vb = getVersion(entityType, entityId, versionB);
+
+        List<String> linesA = Arrays.asList(va.getContent().split("\\r?\\n", -1));
+        List<String> linesB = Arrays.asList(vb.getContent().split("\\r?\\n", -1));
+
+        Patch<String> patch = DiffUtils.diff(linesA, linesB);
+
+        String nameA = "v" + versionA;
+        String nameB = "v" + versionB;
+        List<String> diffLines = UnifiedDiffUtils.generateUnifiedDiff(nameA, nameB, linesA, patch, 3);
+
+        long added = diffLines.stream().filter(l -> l.startsWith("+") && !l.startsWith("+++")).count();
+        long removed = diffLines.stream().filter(l -> l.startsWith("-") && !l.startsWith("---")).count();
+
+        return VersionDiffVO.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .versionA(versionA)
+                .versionB(versionB)
+                .diffLines(diffLines)
+                .addedLines(added)
+                .removedLines(removed)
+                .build();
     }
 }
