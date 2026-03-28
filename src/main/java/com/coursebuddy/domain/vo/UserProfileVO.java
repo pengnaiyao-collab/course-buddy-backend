@@ -1,0 +1,26 @@
+package com.coursebuddy.domain.vo;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserProfileVO {
+    private Long id;
+    private String username;
+    private String email;
+    private String realName;
+    private String phone;
+    private String avatar;
+    private String avatarUrl;
+    private String bio;
+    private Boolean isActive;
+    private LocalDateTime createdAt;
+    private LocalDateTime lastLoginAt;
+}
