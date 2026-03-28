@@ -55,6 +55,31 @@ management:
     health:
       show-details: never
 
+# ============================================================
+# 笔记模块配置
+# ============================================================
+note:
+  export:
+    # PDF 导出配置
+    pdf:
+      # PDF 页边距（点，1 点 ≈ 0.352 mm），默认 50
+      margin: 50
+      # 正文字号，默认 11
+      body-font-size: 11
+      # 标题字号，默认 16
+      title-font-size: 16
+    # Markdown 导出配置
+    markdown:
+      # Markdown 文件编码，默认 UTF-8
+      charset: UTF-8
+  # 版本历史：保留的最大版本数（0 = 不限制）；
+  # 如需自动清理旧版本，请将此值设置为大于 0 的整数
+  version:
+    max-keep: ${NOTE_VERSION_MAX_KEEP:0}
+  # 分享链接默认有效期（秒），0 表示永不过期
+  share:
+    default-ttl-seconds: ${NOTE_SHARE_DEFAULT_TTL:0}
+
 # 讯飞星火配置
 xunfei:
   enabled: true
