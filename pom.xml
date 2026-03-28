@@ -131,6 +131,19 @@
             <version>5.2.5</version>
         </dependency>
 
+        <!-- OkHttp3 (XunFei Spark WebSocket client) -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
+        <!-- Commons Codec (HMAC signing for XunFei auth) -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
