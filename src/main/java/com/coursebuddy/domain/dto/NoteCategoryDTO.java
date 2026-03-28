@@ -17,6 +17,9 @@ public class NoteCategoryDTO {
     @Size(max = 64, message = "Category name must not exceed 64 characters")
     private String name;
 
+    /** 分类描述（可选）。 */
+    private String description;
+
     @Size(max = 16)
     private String color;
 

@@ -15,6 +15,8 @@ public class NoteCategoryVO {
     private Long id;
     private Long userId;
     private String name;
+    /** 分类描述。 */
+    private String description;
     private String color;
     private Integer sortOrder;
     private LocalDateTime createdAt;
