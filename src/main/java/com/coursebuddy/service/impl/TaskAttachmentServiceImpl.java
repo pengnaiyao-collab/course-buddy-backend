@@ -3,7 +3,11 @@ package com.coursebuddy.service.impl;
 import com.coursebuddy.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.coursebuddy.domain.dto.InitUploadRequest;
 import com.coursebuddy.domain.po.TaskAttachmentPO;
+import com.coursebuddy.domain.vo.ChunkUploadResponse;
+import com.coursebuddy.domain.vo.FileUploadResponse;
+import com.coursebuddy.domain.vo.InitUploadResponse;
 import com.coursebuddy.domain.vo.TaskAttachmentVO;
 import com.coursebuddy.mapper.TaskAttachmentMapper;
 import com.coursebuddy.repository.CollaborationTaskRepository;
@@ -33,10 +37,18 @@ public class TaskAttachmentServiceImpl implements ITaskAttachmentService {
         if (!taskRepository.existsById(taskId)) {
             throw new BusinessException(404, "Task not found");
         }
-        String fileUrl = minIOUploadService.uploadFile(file);
+        // Use the chunked upload approach from IMinIOUploadService
+        InitUploadRequest request = new InitUploadRequest();
+        request.setFileName(file.getOriginalFilename());
+        request.setFileSize(file.getSize());
+        
+        InitUploadResponse initResponse = minIOUploadService.initUpload(request);
+        ChunkUploadResponse chunkResponse = minIOUploadService.uploadChunk(initResponse.getSessionId(), 0, file);
+        FileUploadResponse uploadResponse = minIOUploadService.mergeChunks(initResponse.getSessionId(), 1);
+        
         TaskAttachmentPO po = TaskAttachmentPO.builder()
                 .taskId(taskId)
-                .fileUrl(fileUrl)
+                .fileUrl(uploadResponse.getUploadUrl())
                 .fileName(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .fileType(file.getContentType())

@@ -37,9 +37,9 @@ public class NoteServiceImpl implements INoteService {
         User currentUser = SecurityUtils.getCurrentUser();
         if (courseId != null) {
             return noteMapper.poPageToVoPage(
-                    noteRepository.findByUserIdAndCourseId(currentUser.getId(), courseId, pageable));
+                    noteRepository.findByUserIdAndCourseIdAndIsDeletedFalse(currentUser.getId(), courseId, pageable));
         }
-        return noteMapper.poPageToVoPage(noteRepository.findByUserId(currentUser.getId(), pageable));
+        return noteMapper.poPageToVoPage(noteRepository.findByUserIdAndIsDeletedFalse(currentUser.getId(), pageable));
     }
 
     @Override
@@ -87,6 +87,6 @@ public class NoteServiceImpl implements INoteService {
     public Page<NoteVO> search(String keyword, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
         return noteMapper.poPageToVoPage(
-                noteRepository.findByUserIdAndTitleContainingIgnoreCase(currentUser.getId(), keyword, pageable));
+                noteRepository.findByUserIdAndTitleContainingIgnoreCaseAndIsDeletedFalse(currentUser.getId(), keyword, pageable));
     }
 }
