@@ -11,16 +11,14 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CollaborationProjectVO {
-
+public class TaskCommentVO {
     private Long id;
-    private Long courseId;
-    private String name;
-    private String description;
-    private Long ownerId;
-    private String status;
-    private String coverUrl;
-    private Boolean isPublic;
+    private Long taskId;
+    private Long userId;
+    private String username;
+    private String content;
+    private String attachmentUrl;
+    private Boolean isEdited;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

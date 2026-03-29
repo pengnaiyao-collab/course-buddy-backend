@@ -1,0 +1,68 @@
+package com.coursebuddy.service.impl;
+
+import com.coursebuddy.auth.User;
+import com.coursebuddy.common.SecurityUtils;
+import com.coursebuddy.common.exception.BusinessException;
+import com.coursebuddy.domain.po.TaskAttachmentPO;
+import com.coursebuddy.domain.vo.TaskAttachmentVO;
+import com.coursebuddy.mapper.TaskAttachmentMapper;
+import com.coursebuddy.repository.CollaborationTaskRepository;
+import com.coursebuddy.repository.TaskAttachmentRepository;
+import com.coursebuddy.service.ITaskAttachmentService;
+import com.coursebuddy.service.IMinIOUploadService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class TaskAttachmentServiceImpl implements ITaskAttachmentService {
+
+    private final TaskAttachmentRepository attachmentRepository;
+    private final CollaborationTaskRepository taskRepository;
+    private final TaskAttachmentMapper attachmentMapper;
+    private final IMinIOUploadService minIOUploadService;
+
+    @Override
+    @Transactional
+    public TaskAttachmentVO uploadAttachment(Long taskId, MultipartFile file) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        if (!taskRepository.existsById(taskId)) {
+            throw new BusinessException(404, "Task not found");
+        }
+        String fileUrl = minIOUploadService.uploadFile(file);
+        TaskAttachmentPO po = TaskAttachmentPO.builder()
+                .taskId(taskId)
+                .fileUrl(fileUrl)
+                .fileName(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .fileType(file.getContentType())
+                .uploadedBy(currentUser.getId())
+                .build();
+        return attachmentMapper.poToVo(attachmentRepository.save(po));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAttachment(Long attachmentId) {
+        User currentUser = SecurityUtils.getCurrentUser();
+        TaskAttachmentPO po = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new BusinessException(404, "Attachment not found"));
+        if (!po.getUploadedBy().equals(currentUser.getId())) {
+            throw new BusinessException(403, "You can only delete your own attachments");
+        }
+        attachmentRepository.delete(po);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskAttachmentVO> getAttachments(Long taskId) {
+        if (!taskRepository.existsById(taskId)) {
+            throw new BusinessException(404, "Task not found");
+        }
+        return attachmentMapper.poListToVoList(attachmentRepository.findByTaskId(taskId));
+    }
+}

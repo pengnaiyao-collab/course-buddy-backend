@@ -11,16 +11,14 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CollaborationProjectVO {
-
+public class TaskAttachmentVO {
     private Long id;
-    private Long courseId;
-    private String name;
-    private String description;
-    private Long ownerId;
-    private String status;
-    private String coverUrl;
-    private Boolean isPublic;
+    private Long taskId;
+    private String fileUrl;
+    private String fileName;
+    private Long fileSize;
+    private String fileType;
+    private Long uploadedBy;
+    private String uploaderName;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

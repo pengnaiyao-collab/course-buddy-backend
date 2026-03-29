@@ -11,5 +11,13 @@ public interface CollaborationTaskRepository extends JpaRepository<Collaboration
 
     Page<CollaborationTaskPO> findByProjectId(Long projectId, Pageable pageable);
 
+    Page<CollaborationTaskPO> findByProjectIdAndStatus(Long projectId, String status, Pageable pageable);
+
     Page<CollaborationTaskPO> findByAssigneeId(Long assigneeId, Pageable pageable);
+
+    Page<CollaborationTaskPO> findByAssigneeIdAndStatus(Long assigneeId, String status, Pageable pageable);
+
+    long countByProjectIdAndStatus(Long projectId, String status);
+
+    long countByProjectId(Long projectId);
 }
