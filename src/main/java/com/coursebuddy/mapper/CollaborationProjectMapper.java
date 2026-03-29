@@ -1,51 +1,19 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.CollaborationProjectDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CollaborationProjectPO;
-import com.coursebuddy.domain.vo.CollaborationProjectVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface CollaborationProjectMapper extends BaseMapper<CollaborationProjectPO> {
 
-@Component
-public class CollaborationProjectMapper {
+    @Select("SELECT * FROM collaboration_projects WHERE owner_id = #{ownerId}")
+    IPage<CollaborationProjectPO> findByOwnerId(Page<CollaborationProjectPO> page, @Param("ownerId") Long ownerId);
 
-    public CollaborationProjectPO dtoToPo(CollaborationProjectDTO dto) {
-        if (dto == null) return null;
-        return CollaborationProjectPO.builder()
-                .courseId(dto.getCourseId())
-                .name(dto.getName())
-                .description(dto.getDescription())
-                .status(dto.getStatus())
-                .coverUrl(dto.getCoverUrl())
-                .isPublic(dto.getIsPublic())
-                .build();
-    }
-
-    public CollaborationProjectVO poToVo(CollaborationProjectPO po) {
-        if (po == null) return null;
-        return CollaborationProjectVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .name(po.getName())
-                .description(po.getDescription())
-                .ownerId(po.getOwnerId())
-                .status(po.getStatus())
-                .coverUrl(po.getCoverUrl())
-                .isPublic(po.getIsPublic())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<CollaborationProjectVO> poListToVoList(List<CollaborationProjectPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<CollaborationProjectVO> poPageToVoPage(Page<CollaborationProjectPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM collaboration_projects WHERE course_id = #{courseId}")
+    IPage<CollaborationProjectPO> findByCourseId(Page<CollaborationProjectPO> page, @Param("courseId") Long courseId);
 }

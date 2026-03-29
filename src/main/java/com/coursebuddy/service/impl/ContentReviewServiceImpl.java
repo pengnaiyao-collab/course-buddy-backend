@@ -1,8 +1,16 @@
 package com.coursebuddy.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.coursebuddy.domain.po.ContentReviewDecisionPO;
 import com.coursebuddy.domain.po.ContentReviewPO;
-import com.coursebuddy.repository.ContentReviewRepository;
+import com.coursebuddy.domain.po.FileUploadPO;
+import com.coursebuddy.domain.po.KnowledgeItemPO;
+import com.coursebuddy.mapper.ContentReviewDecisionMapper;
+import com.coursebuddy.mapper.ContentReviewMapper;
+import com.coursebuddy.mapper.FileUploadMapper;
+import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.service.IContentReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,72 +20,188 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ContentReviewServiceImpl implements IContentReviewService {
 
-    private final ContentReviewRepository reviewRepository;
+    private final ContentReviewMapper reviewRepository;
+    private final ContentReviewDecisionMapper decisionRepository;
+    private final KnowledgeItemMapper knowledgeItemRepository;
+    private final FileUploadMapper fileUploadRepository;
 
     @Override
     @Transactional
-    public ContentReviewPO submitForReview(String contentType, Long contentId,
-                                           Long reviewerId, String comments) {
+    public ContentReviewPO submitForReview(String contentType, Long contentId, Long reviewerId,
+                                           Integer requiredApprovals, String comments) {
         ContentReviewPO review = ContentReviewPO.builder()
                 .contentType(contentType)
                 .contentId(contentId)
                 .reviewerId(reviewerId)
+                .requiredApprovals(requiredApprovals == null ? 2 : Math.max(1, requiredApprovals))
+                .approvalCount(0)
                 .status("PENDING")
+                .moderationStatus("NORMAL")
                 .comments(comments)
                 .build();
-        ContentReviewPO saved = reviewRepository.save(review);
-        log.info("Submitted for review: {}/{} by reviewer {}", contentType, contentId, reviewerId);
+        reviewRepository.insert(review);
+        ContentReviewPO saved = review;
+        log.info("Submitted for review: {}/{} requiredApprovals={}",
+                contentType, contentId, saved.getRequiredApprovals());
         return saved;
     }
 
     @Override
     @Transactional
-    public ContentReviewPO approveReview(Long reviewId) {
-        ContentReviewPO review = findAndCheckPending(reviewId);
-        review.setStatus("APPROVED");
-        review.setReviewedAt(LocalDateTime.now());
-        ContentReviewPO saved = reviewRepository.save(review);
-        log.info("Review {} approved", reviewId);
-        return saved;
+    public ContentReviewPO approveReview(Long reviewId, Long reviewerId, String comments) {
+        ContentReviewPO review = findAndCheckActive(reviewId);
+        ensureNoDuplicateDecision(reviewId, reviewerId);
+
+        decisionRepository.insert(ContentReviewDecisionPO.builder()
+                .reviewId(reviewId)
+                .reviewerId(reviewerId)
+                .decision("APPROVE")
+                .comments(comments)
+                .build());
+
+        long approvals = decisionRepository.countByReviewIdAndDecision(reviewId, "APPROVE");
+        review.setApprovalCount((int) approvals);
+        if (review.getReviewerId() == null) {
+            review.setReviewerId(reviewerId);
+        } else if (!review.getReviewerId().equals(reviewerId) && review.getSecondReviewerId() == null) {
+            review.setSecondReviewerId(reviewerId);
+        }
+
+        if (approvals >= review.getRequiredApprovals()) {
+            review.setStatus("APPROVED");
+            review.setReviewedAt(LocalDateTime.now());
+        } else {
+            review.setStatus("IN_REVIEW");
+        }
+        reviewRepository.updateById(review);
+        return review;
     }
 
     @Override
     @Transactional
-    public ContentReviewPO rejectReview(Long reviewId, String comments) {
-        ContentReviewPO review = findAndCheckPending(reviewId);
+    public ContentReviewPO rejectReview(Long reviewId, Long reviewerId, String comments) {
+        ContentReviewPO review = findAndCheckActive(reviewId);
+        ensureNoDuplicateDecision(reviewId, reviewerId);
+
+        decisionRepository.insert(ContentReviewDecisionPO.builder()
+                .reviewId(reviewId)
+                .reviewerId(reviewerId)
+                .decision("REJECT")
+                .comments(comments)
+                .build());
+
         review.setStatus("REJECTED");
         review.setComments(comments);
         review.setReviewedAt(LocalDateTime.now());
-        ContentReviewPO saved = reviewRepository.save(review);
-        log.info("Review {} rejected", reviewId);
-        return saved;
+        reviewRepository.updateById(review);
+        return review;
+    }
+
+    @Override
+    @Transactional
+    public ContentReviewPO markViolationAndTakedown(Long reviewId, Long reviewerId, String reason) {
+        ContentReviewPO review = reviewRepository.selectById(reviewId);
+        if (review == null) {
+            throw new BusinessException(404, "Review not found: " + reviewId);
+        }
+        decisionRepository.insert(ContentReviewDecisionPO.builder()
+                .reviewId(reviewId)
+                .reviewerId(reviewerId)
+                .decision("TAKEDOWN")
+                .comments(reason)
+                .build());
+
+        review.setModerationStatus("TAKEDOWN");
+        review.setViolationReason(reason);
+        review.setStatus("TAKEDOWNED");
+        review.setReviewedAt(LocalDateTime.now());
+        applyModeration(review, false);
+        reviewRepository.updateById(review);
+        return review;
+    }
+
+    @Override
+    @Transactional
+    public ContentReviewPO markViolationAndRemove(Long reviewId, Long reviewerId, String reason) {
+        ContentReviewPO review = reviewRepository.selectById(reviewId);
+        if (review == null) {
+            throw new BusinessException(404, "Review not found: " + reviewId);
+        }
+        decisionRepository.insert(ContentReviewDecisionPO.builder()
+                .reviewId(reviewId)
+                .reviewerId(reviewerId)
+                .decision("REMOVE")
+                .comments(reason)
+                .build());
+
+        review.setModerationStatus("REMOVED");
+        review.setViolationReason(reason);
+        review.setStatus("REMOVED");
+        review.setReviewedAt(LocalDateTime.now());
+        applyModeration(review, true);
+        reviewRepository.updateById(review);
+        return review;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ContentReviewPO> listPendingReviews(Pageable pageable) {
-        return reviewRepository.findByStatus("PENDING", pageable);
+        IPage<ContentReviewPO> poPage = reviewRepository.findByStatusIn(
+                MybatisPlusPageUtils.toMpPage(pageable), Set.of("PENDING", "IN_REVIEW"));
+        return MybatisPlusPageUtils.toSpringPage(poPage, pageable);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ContentReviewPO getReview(Long reviewId) {
-        return reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new BusinessException(404, "Review not found: " + reviewId));
+        ContentReviewPO review = reviewRepository.selectById(reviewId);
+        if (review == null) {
+            throw new BusinessException(404, "Review not found: " + reviewId);
+        }
+        return review;
     }
 
-    private ContentReviewPO findAndCheckPending(Long reviewId) {
-        ContentReviewPO review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new BusinessException(404, "Review not found: " + reviewId));
-        if (!"PENDING".equals(review.getStatus())) {
-            throw new BusinessException("Review is no longer pending, current status: "
-                    + review.getStatus());
+    private void applyModeration(ContentReviewPO review, boolean hardRemove) {
+        String type = review.getContentType() == null ? "" : review.getContentType().toUpperCase();
+        if ("KNOWLEDGE_ITEM".equals(type) || "KNOWLEDGE".equals(type)) {
+            KnowledgeItemPO item = knowledgeItemRepository.selectById(review.getContentId());
+            if (item == null) {
+                throw new BusinessException(404, "Knowledge item not found");
+            }
+            item.setStatus(hardRemove ? "DELETED" : "TAKEDOWN");
+            knowledgeItemRepository.updateById(item);
+            return;
+        }
+        if ("FILE_UPLOAD".equals(type) || "FILE".equals(type)) {
+            FileUploadPO file = fileUploadRepository.selectById(review.getContentId());
+            if (file == null) {
+                throw new BusinessException(404, "File not found");
+            }
+            file.setIsDeleted(true);
+            fileUploadRepository.updateById(file);
+        }
+    }
+
+    private void ensureNoDuplicateDecision(Long reviewId, Long reviewerId) {
+        if (decisionRepository.findByReviewIdAndReviewerId(reviewId, reviewerId).isPresent()) {
+            throw new BusinessException(409, "该审核人已处理过此记录");
+        }
+    }
+
+    private ContentReviewPO findAndCheckActive(Long reviewId) {
+        ContentReviewPO review = reviewRepository.selectById(reviewId);
+        if (review == null) {
+            throw new BusinessException(404, "Review not found: " + reviewId);
+        }
+        if (!"PENDING".equals(review.getStatus()) && !"IN_REVIEW".equals(review.getStatus())) {
+            throw new BusinessException("Review is no longer active, current status: " + review.getStatus());
         }
         return review;
     }

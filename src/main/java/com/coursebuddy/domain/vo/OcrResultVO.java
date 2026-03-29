@@ -16,6 +16,8 @@ public class OcrResultVO {
     private Long fileUploadId;
     private String objectName;
     private String extractedText;
+    private String structuredSummary;
+    private Long knowledgeItemId;
     private Double confidence;
     private String language;
     private String status;

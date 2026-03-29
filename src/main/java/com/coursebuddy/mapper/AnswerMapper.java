@@ -1,43 +1,16 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.AnswerDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.AnswerPO;
-import com.coursebuddy.domain.vo.AnswerVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface AnswerMapper extends BaseMapper<AnswerPO> {
 
-@Component
-public class AnswerMapper {
-
-    public AnswerPO dtoToPo(AnswerDTO dto) {
-        if (dto == null) return null;
-        return AnswerPO.builder()
-                .content(dto.getContent())
-                .source(dto.getSource())
-                .build();
-    }
-
-    public AnswerVO poToVo(AnswerPO po) {
-        if (po == null) return null;
-        return AnswerVO.builder()
-                .id(po.getId())
-                .questionId(po.getQuestionId())
-                .content(po.getContent())
-                .source(po.getSource())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<AnswerVO> poListToVoList(List<AnswerPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<AnswerVO> poPageToVoPage(Page<AnswerPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM answers WHERE question_id = #{questionId}")
+    IPage<AnswerPO> findByQuestionId(Page<AnswerPO> page, @Param("questionId") Long questionId);
 }

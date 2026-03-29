@@ -1,9 +1,7 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -14,39 +12,27 @@ import java.time.LocalDateTime;
  * L3: 选课班级成员
  * L4: 校内访客成员（只读）
  */
-@Entity
-@Table(name = "course_permissions",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "course_id"}))
+@TableName("course_permissions")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CoursePermissionPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @Column(name = "course_id", nullable = false)
     private Long courseId;
 
     /**
      * 权限级别: L1, L2, L3, L4
      */
-    @Column(name = "permission_level", nullable = false, length = 2)
     private String permissionLevel;
-
-    @Column(name = "granted_by")
     private Long grantedBy;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 }

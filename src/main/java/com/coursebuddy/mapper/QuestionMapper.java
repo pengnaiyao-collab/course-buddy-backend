@@ -1,46 +1,19 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.QuestionDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.QuestionPO;
-import com.coursebuddy.domain.vo.QuestionVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface QuestionMapper extends BaseMapper<QuestionPO> {
 
-@Component
-public class QuestionMapper {
+    @Select("SELECT * FROM questions WHERE user_id = #{userId}")
+    IPage<QuestionPO> findByUserId(Page<QuestionPO> page, @Param("userId") Long userId);
 
-    public QuestionPO dtoToPo(QuestionDTO dto) {
-        if (dto == null) return null;
-        return QuestionPO.builder()
-                .courseId(dto.getCourseId())
-                .content(dto.getContent())
-                .subject(dto.getSubject())
-                .build();
-    }
-
-    public QuestionVO poToVo(QuestionPO po) {
-        if (po == null) return null;
-        return QuestionVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .userId(po.getUserId())
-                .content(po.getContent())
-                .subject(po.getSubject())
-                .status(po.getStatus())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<QuestionVO> poListToVoList(List<QuestionPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<QuestionVO> poPageToVoPage(Page<QuestionPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM questions WHERE course_id = #{courseId}")
+    IPage<QuestionPO> findByCourseId(Page<QuestionPO> page, @Param("courseId") Long courseId);
 }

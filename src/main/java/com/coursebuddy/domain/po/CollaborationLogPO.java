@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,37 +12,17 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "collaboration_logs")
+@TableName("collaboration_logs")
 public class CollaborationLogPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "project_id", nullable = false)
     private Long projectId;
-
-    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @Column(name = "action_type", nullable = false, length = 32)
     private String actionType;
-
-    @Column(name = "entity_type", nullable = false, length = 32)
     private String entityType;
-
-    @Column(name = "entity_id")
     private Long entityId;
-
-    @Column(name = "change_data", columnDefinition = "TEXT")
     private String changeData;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

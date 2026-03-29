@@ -1,50 +1,32 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.NotificationDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.NotificationPO;
-import com.coursebuddy.domain.vo.NotificationVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface NotificationMapper extends BaseMapper<NotificationPO> {
 
-@Component
-public class NotificationMapper {
+    @Select("SELECT * FROM notifications WHERE user_id = #{userId}")
+    IPage<NotificationPO> findByUserId(Page<NotificationPO> page, @Param("userId") Long userId);
 
-    public NotificationPO dtoToPo(NotificationDTO dto) {
-        if (dto == null) return null;
-        return NotificationPO.builder()
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .type(dto.getType() != null ? dto.getType() : "SYSTEM")
-                .relatedId(dto.getRelatedId())
-                .relatedType(dto.getRelatedType())
-                .build();
-    }
+    @Select("SELECT * FROM notifications WHERE user_id = #{userId} AND is_read = #{isRead}")
+    IPage<NotificationPO> findByUserIdAndIsRead(Page<NotificationPO> page, @Param("userId") Long userId, @Param("isRead") Boolean isRead);
 
-    public NotificationVO poToVo(NotificationPO po) {
-        if (po == null) return null;
-        return NotificationVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .title(po.getTitle())
-                .content(po.getContent())
-                .type(po.getType())
-                .isRead(po.getIsRead())
-                .relatedId(po.getRelatedId())
-                .relatedType(po.getRelatedType())
-                .expiresAt(po.getExpiresAt())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM notifications WHERE user_id = #{userId} AND is_read = #{isRead} AND type = #{type}")
+    IPage<NotificationPO> findByUserIdAndIsReadAndType(Page<NotificationPO> page, @Param("userId") Long userId, @Param("isRead") Boolean isRead, @Param("type") String type);
 
-    public List<NotificationVO> poListToVoList(List<NotificationPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM notifications WHERE user_id = #{userId} AND type = #{type}")
+    IPage<NotificationPO> findByUserIdAndType(Page<NotificationPO> page, @Param("userId") Long userId, @Param("type") String type);
 
-    public Page<NotificationVO> poPageToVoPage(Page<NotificationPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT COUNT(*) FROM notifications WHERE user_id = #{userId} AND is_read = #{isRead}")
+    long countByUserIdAndIsRead(@Param("userId") Long userId, @Param("isRead") Boolean isRead);
+
+    @Update("UPDATE notifications SET is_read = true WHERE user_id = #{userId}")
+    int markAllReadByUserId(@Param("userId") Long userId);
 }

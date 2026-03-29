@@ -32,5 +32,5 @@ public interface IMinIOUploadService {
      * Upload multiple files at once. Each file is uploaded as a separate object.
      * Returns a summary of successes and failures.
      */
-    BatchUploadResultVO batchUpload(MultipartFile[] files);
+    BatchUploadResultVO batchUpload(MultipartFile[] files, String category);
 }

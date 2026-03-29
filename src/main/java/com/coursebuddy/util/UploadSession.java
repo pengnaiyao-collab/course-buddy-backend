@@ -18,6 +18,7 @@ public class UploadSession implements Serializable {
     private String sessionId;
     private String fileName;
     private long fileSize;
+    private String category;
     private int totalChunks;
     private String objectName;
     private int progress;

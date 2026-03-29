@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,43 +9,18 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "attendances")
+@TableName("attendances")
 public class AttendancePO {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "course_id", nullable = false)
     private Long courseId;
-
-    @Column(name = "student_id", nullable = false)
     private Long studentId;
-
-    @Column(name = "session_date", nullable = false)
     private LocalDate sessionDate;
-
-    @Column(length = 16)
     @Builder.Default
     private String status = "PRESENT";
-
-    @Column(length = 512)
     private String remarks;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

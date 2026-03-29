@@ -1,8 +1,10 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.CollaborationProjectDTO;
 import com.coursebuddy.domain.dto.ProjectMemberDTO;
 import com.coursebuddy.domain.po.CollaborationProjectPO;
@@ -11,13 +13,13 @@ import com.coursebuddy.domain.po.ProjectMemberPO;
 import com.coursebuddy.domain.vo.CollaborationProjectVO;
 import com.coursebuddy.domain.vo.ProjectMemberVO;
 import com.coursebuddy.domain.vo.ProjectStatsVO;
+import com.coursebuddy.converter.CollaborationProjectConverter;
+import com.coursebuddy.converter.ProjectMemberConverter;
 import com.coursebuddy.mapper.CollaborationProjectMapper;
+import com.coursebuddy.mapper.CollaborationTaskMapper;
 import com.coursebuddy.mapper.ProjectMemberMapper;
-import com.coursebuddy.repository.CollaborationProjectRepository;
-import com.coursebuddy.repository.CollaborationTaskRepository;
-import com.coursebuddy.repository.ProjectMemberRepository;
-import com.coursebuddy.repository.TaskAttachmentRepository;
-import com.coursebuddy.repository.TaskCommentRepository;
+import com.coursebuddy.mapper.TaskAttachmentMapper;
+import com.coursebuddy.mapper.TaskCommentMapper;
 import com.coursebuddy.service.IProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,13 +33,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements IProjectService {
 
-    private final CollaborationProjectRepository projectRepository;
-    private final ProjectMemberRepository memberRepository;
-    private final CollaborationTaskRepository taskRepository;
-    private final TaskCommentRepository commentRepository;
-    private final TaskAttachmentRepository attachmentRepository;
-    private final CollaborationProjectMapper projectMapper;
-    private final ProjectMemberMapper memberMapper;
+    private final CollaborationProjectMapper projectRepository;
+    private final ProjectMemberMapper memberRepository;
+    private final CollaborationTaskMapper taskRepository;
+    private final TaskCommentMapper commentRepository;
+    private final TaskAttachmentMapper attachmentRepository;
+    private final CollaborationProjectConverter projectMapper;
+    private final ProjectMemberConverter memberMapper;
 
     @Override
     @Transactional
@@ -46,14 +48,15 @@ public class ProjectServiceImpl implements IProjectService {
         CollaborationProjectPO po = projectMapper.dtoToPo(dto);
         po.setOwnerId(currentUser.getId());
         if (po.getStatus() == null) po.setStatus("ACTIVE");
-        CollaborationProjectPO saved = projectRepository.save(po);
+        projectRepository.insert(po);
+        CollaborationProjectPO saved = po;
         // Auto-add owner as OWNER member
         ProjectMemberPO ownerMember = ProjectMemberPO.builder()
                 .projectId(saved.getId())
                 .userId(currentUser.getId())
                 .role("OWNER")
                 .build();
-        memberRepository.save(ownerMember);
+        memberRepository.insert(ownerMember);
         return projectMapper.poToVo(saved);
     }
 
@@ -68,7 +71,8 @@ public class ProjectServiceImpl implements IProjectService {
         if (dto.getStatus() != null) po.setStatus(dto.getStatus());
         if (dto.getCoverUrl() != null) po.setCoverUrl(dto.getCoverUrl());
         if (dto.getIsPublic() != null) po.setIsPublic(dto.getIsPublic());
-        return projectMapper.poToVo(projectRepository.save(po));
+        projectRepository.updateById(po);
+        return projectMapper.poToVo(po);
     }
 
     @Override
@@ -79,7 +83,7 @@ public class ProjectServiceImpl implements IProjectService {
         if (!po.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the project owner can delete the project");
         }
-        projectRepository.delete(po);
+        projectRepository.deleteById(po.getId());
     }
 
     @Override
@@ -95,8 +99,9 @@ public class ProjectServiceImpl implements IProjectService {
     @Transactional(readOnly = true)
     public Page<CollaborationProjectVO> listMyProjects(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return projectRepository.findByOwnerId(currentUser.getId(), pageable)
-                .map(projectMapper::poToVo);
+        IPage<CollaborationProjectPO> poPage = projectRepository.findByOwnerId(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return MybatisPlusPageUtils.toSpringPage(poPage, pageable).map(projectMapper::poToVo);
     }
 
     @Override
@@ -106,7 +111,8 @@ public class ProjectServiceImpl implements IProjectService {
         CollaborationProjectPO po = getProjectPo(id);
         checkOwnerOrManager(id, currentUser.getId());
         po.setStatus("ARCHIVED");
-        return projectMapper.poToVo(projectRepository.save(po));
+        projectRepository.updateById(po);
+        return projectMapper.poToVo(po);
     }
 
     @Override
@@ -123,7 +129,8 @@ public class ProjectServiceImpl implements IProjectService {
                 .userId(dto.getUserId())
                 .role(dto.getRole() != null ? dto.getRole() : "MEMBER")
                 .build();
-        return memberMapper.poToVo(memberRepository.save(member));
+        memberRepository.insert(member);
+        return memberMapper.poToVo(member);
     }
 
     @Override
@@ -146,14 +153,17 @@ public class ProjectServiceImpl implements IProjectService {
         ProjectMemberPO member = memberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new BusinessException(404, "Member not found"));
         member.setRole(role);
-        return memberMapper.poToVo(memberRepository.save(member));
+        memberRepository.updateById(member);
+        return memberMapper.poToVo(member);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ProjectMemberVO> listMembers(Long projectId, Pageable pageable) {
         getProjectPo(projectId);
-        return memberMapper.poPageToVoPage(memberRepository.findByProjectId(projectId, pageable));
+        IPage<ProjectMemberPO> poPage = memberRepository.findByProjectId(
+                MybatisPlusPageUtils.toMpPage(pageable), projectId);
+        return memberMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -188,8 +198,11 @@ public class ProjectServiceImpl implements IProjectService {
     }
 
     private CollaborationProjectPO getProjectPo(Long id) {
-        return projectRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Project not found"));
+        CollaborationProjectPO po = projectRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Project not found");
+        }
+        return po;
     }
 
     private void checkOwnerOrManager(Long projectId, Long userId) {

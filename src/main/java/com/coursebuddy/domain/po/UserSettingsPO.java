@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,55 +12,26 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "user_settings")
+@TableName("user_settings")
 public class UserSettingsPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "user_id", nullable = false, unique = true)
     private Long userId;
-
-    @Column(name = "notify_email", nullable = false)
     @Builder.Default
     private Boolean notifyEmail = true;
-
-    @Column(name = "notify_push", nullable = false)
     @Builder.Default
     private Boolean notifyPush = true;
-
-    @Column(name = "privacy_profile", nullable = false, length = 16)
     @Builder.Default
     private String privacyProfile = "PUBLIC";
-
-    @Column(nullable = false, length = 8)
     @Builder.Default
     private String language = "zh_CN";
-
-    @Column(nullable = false, length = 16)
     @Builder.Default
     private String theme = "light";
-
-    @Column(nullable = false, length = 64)
     @Builder.Default
     private String timezone = "Asia/Shanghai";
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

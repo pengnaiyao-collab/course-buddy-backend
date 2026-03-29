@@ -1,13 +1,15 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.CourseEnrollmentDTO;
 import com.coursebuddy.domain.po.CourseEnrollmentPO;
 import com.coursebuddy.domain.vo.CourseEnrollmentVO;
+import com.coursebuddy.converter.CourseEnrollmentConverter;
 import com.coursebuddy.mapper.CourseEnrollmentMapper;
-import com.coursebuddy.repository.CourseEnrollmentRepository;
 import com.coursebuddy.service.ICourseEnrollmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,8 +23,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CourseEnrollmentServiceImpl implements ICourseEnrollmentService {
 
-    private final CourseEnrollmentRepository enrollmentRepository;
-    private final CourseEnrollmentMapper enrollmentMapper;
+    private final CourseEnrollmentMapper enrollmentRepository;
+    private final CourseEnrollmentConverter enrollmentMapper;
 
     @Override
     @Transactional
@@ -36,7 +38,8 @@ public class CourseEnrollmentServiceImpl implements ICourseEnrollmentService {
                 .userId(currentUser.getId())
                 .status("ACTIVE")
                 .build();
-        return enrollmentMapper.poToVo(enrollmentRepository.save(po));
+        enrollmentRepository.insert(po);
+        return enrollmentMapper.poToVo(po);
     }
 
     @Override
@@ -47,7 +50,7 @@ public class CourseEnrollmentServiceImpl implements ICourseEnrollmentService {
                 .orElseThrow(() -> new BusinessException(404, "Enrollment not found"));
         po.setStatus("DROPPED");
         po.setDroppedAt(LocalDateTime.now());
-        enrollmentRepository.save(po);
+        enrollmentRepository.updateById(po);
     }
 
     @Override
@@ -58,7 +61,7 @@ public class CourseEnrollmentServiceImpl implements ICourseEnrollmentService {
                 .orElseThrow(() -> new BusinessException(404, "Enrollment not found"));
         po.setStatus("COMPLETED");
         po.setCompletedAt(LocalDateTime.now());
-        enrollmentRepository.save(po);
+        enrollmentRepository.updateById(po);
     }
 
     @Override
@@ -66,18 +69,23 @@ public class CourseEnrollmentServiceImpl implements ICourseEnrollmentService {
     public Page<CourseEnrollmentVO> listMyEnrollments(String status, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
         if (status != null) {
+            IPage<CourseEnrollmentPO> poPage = enrollmentRepository.findByUserIdAndStatus(
+                    MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId(), status);
             return enrollmentMapper.poPageToVoPage(
-                    enrollmentRepository.findByUserIdAndStatus(currentUser.getId(), status, pageable));
+                    MybatisPlusPageUtils.toSpringPage(poPage, pageable));
         }
+        IPage<CourseEnrollmentPO> poPage = enrollmentRepository.findByUserId(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
         return enrollmentMapper.poPageToVoPage(
-                enrollmentRepository.findByUserId(currentUser.getId(), pageable));
+                MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CourseEnrollmentVO> listCourseStudents(Long courseId, Pageable pageable) {
-        return enrollmentMapper.poPageToVoPage(
-                enrollmentRepository.findByCourseId(courseId, pageable));
+        IPage<CourseEnrollmentPO> poPage = enrollmentRepository.findByCourseId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return enrollmentMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override

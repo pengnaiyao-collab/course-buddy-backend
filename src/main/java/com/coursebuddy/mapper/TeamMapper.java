@@ -1,67 +1,22 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.TeamDTO;
-import com.coursebuddy.domain.po.TeamMemberPO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.TeamPO;
-import com.coursebuddy.domain.vo.TeamMemberVO;
-import com.coursebuddy.domain.vo.TeamVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface TeamMapper extends BaseMapper<TeamPO> {
 
-@Component
-public class TeamMapper {
+    @Select("SELECT * FROM teams WHERE owner_id = #{ownerId}")
+    IPage<TeamPO> findByOwnerId(Page<TeamPO> page, @Param("ownerId") Long ownerId);
 
-    public TeamPO dtoToPo(TeamDTO dto) {
-        if (dto == null) return null;
-        return TeamPO.builder()
-                .name(dto.getName())
-                .description(dto.getDescription())
-                .avatarUrl(dto.getAvatarUrl())
-                .courseId(dto.getCourseId())
-                .projectId(dto.getProjectId())
-                .build();
-    }
+    @Select("SELECT t.* FROM teams t JOIN team_members tm ON t.id = tm.team_id WHERE tm.user_id = #{userId}")
+    IPage<TeamPO> findByMemberId(Page<TeamPO> page, @Param("userId") Long userId);
 
-    public TeamVO poToVo(TeamPO po) {
-        if (po == null) return null;
-        return TeamVO.builder()
-                .id(po.getId())
-                .name(po.getName())
-                .description(po.getDescription())
-                .avatarUrl(po.getAvatarUrl())
-                .ownerId(po.getOwnerId())
-                .courseId(po.getCourseId())
-                .projectId(po.getProjectId())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public TeamMemberVO memberPoToVo(TeamMemberPO po) {
-        if (po == null) return null;
-        return TeamMemberVO.builder()
-                .id(po.getId())
-                .teamId(po.getTeamId())
-                .userId(po.getUserId())
-                .role(po.getRole())
-                .joinedAt(po.getJoinedAt())
-                .build();
-    }
-
-    public List<TeamVO> poListToVoList(List<TeamPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<TeamVO> poPageToVoPage(Page<TeamPO> page) {
-        return page.map(this::poToVo);
-    }
-
-    public List<TeamMemberVO> memberPoListToVoList(List<TeamMemberPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::memberPoToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM teams WHERE course_id = #{courseId}")
+    IPage<TeamPO> findByCourseId(Page<TeamPO> page, @Param("courseId") Long courseId);
 }

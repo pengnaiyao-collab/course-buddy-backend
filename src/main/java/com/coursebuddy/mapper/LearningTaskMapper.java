@@ -1,51 +1,19 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.LearningTaskDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.LearningTaskPO;
-import com.coursebuddy.domain.vo.LearningTaskVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface LearningTaskMapper extends BaseMapper<LearningTaskPO> {
 
-@Component
-public class LearningTaskMapper {
+    @Select("SELECT * FROM learning_tasks WHERE user_id = #{userId}")
+    IPage<LearningTaskPO> findByUserId(Page<LearningTaskPO> page, @Param("userId") Long userId);
 
-    public LearningTaskPO dtoToPo(LearningTaskDTO dto) {
-        if (dto == null) return null;
-        return LearningTaskPO.builder()
-                .courseId(dto.getCourseId())
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .status(dto.getStatus())
-                .dueDate(dto.getDueDate())
-                .priority(dto.getPriority())
-                .build();
-    }
-
-    public LearningTaskVO poToVo(LearningTaskPO po) {
-        if (po == null) return null;
-        return LearningTaskVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .courseId(po.getCourseId())
-                .title(po.getTitle())
-                .description(po.getDescription())
-                .status(po.getStatus())
-                .dueDate(po.getDueDate())
-                .priority(po.getPriority())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<LearningTaskVO> poListToVoList(List<LearningTaskPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<LearningTaskVO> poPageToVoPage(Page<LearningTaskPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM learning_tasks WHERE user_id = #{userId} AND status = #{status}")
+    IPage<LearningTaskPO> findByUserIdAndStatus(Page<LearningTaskPO> page, @Param("userId") Long userId, @Param("status") String status);
 }

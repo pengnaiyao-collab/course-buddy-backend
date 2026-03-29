@@ -1,31 +1,23 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.coursebuddy.domain.po.NoteVersionPO;
-import com.coursebuddy.domain.vo.NoteVersionVO;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class NoteVersionMapper {
+@Mapper
+public interface NoteVersionMapper extends BaseMapper<NoteVersionPO> {
 
-    public NoteVersionVO poToVo(NoteVersionPO po) {
-        if (po == null) return null;
-        return NoteVersionVO.builder()
-                .id(po.getId())
-                .noteId(po.getNoteId())
-                .versionNo(po.getVersionNo())
-                .title(po.getTitle())
-                .content(po.getContent())
-                .changedBy(po.getChangedBy())
-                .changeDesc(po.getChangeDesc())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM note_versions WHERE note_id = #{noteId} ORDER BY version_no DESC")
+    List<NoteVersionPO> findByNoteIdOrderByVersionNoDesc(@Param("noteId") Long noteId);
 
-    public List<NoteVersionVO> poListToVoList(List<NoteVersionPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM note_versions WHERE note_id = #{noteId} AND version_no = #{versionNo}")
+    Optional<NoteVersionPO> findByNoteIdAndVersionNo(@Param("noteId") Long noteId, @Param("versionNo") Integer versionNo);
+
+    @Select("SELECT COALESCE(MAX(version_no), 0) FROM note_versions WHERE note_id = #{noteId}")
+    Integer getMaxVersionNo(@Param("noteId") Long noteId);
 }

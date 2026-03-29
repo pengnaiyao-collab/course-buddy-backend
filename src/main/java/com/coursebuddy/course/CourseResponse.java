@@ -1,5 +1,6 @@
 package com.coursebuddy.course;
 
+import com.coursebuddy.auth.User;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,13 +24,13 @@ public class CourseResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static CourseResponse from(Course course) {
+    public static CourseResponse from(Course course, User teacher) {
         return CourseResponse.builder()
                 .id(course.getId())
                 .title(course.getTitle())
                 .description(course.getDescription())
-                .teacherId(course.getTeacher() != null ? course.getTeacher().getId() : null)
-                .teacherName(course.getTeacher() != null ? course.getTeacher().getFullName() : null)
+                .teacherId(course.getTeacherId())
+                .teacherName(teacher != null ? teacher.getFullName() : null)
                 .price(course.getPrice())
                 .category(course.getCategory())
                 .status(course.getStatus())

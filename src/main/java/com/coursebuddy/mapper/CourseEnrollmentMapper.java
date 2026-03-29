@@ -1,35 +1,39 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CourseEnrollmentPO;
-import com.coursebuddy.domain.vo.CourseEnrollmentVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class CourseEnrollmentMapper {
+@Mapper
+public interface CourseEnrollmentMapper extends BaseMapper<CourseEnrollmentPO> {
 
-    public CourseEnrollmentVO poToVo(CourseEnrollmentPO po) {
-        if (po == null) return null;
-        return CourseEnrollmentVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .userId(po.getUserId())
-                .status(po.getStatus())
-                .enrolledAt(po.getEnrolledAt())
-                .droppedAt(po.getDroppedAt())
-                .completedAt(po.getCompletedAt())
-                .build();
-    }
+    @Select("SELECT * FROM course_enrollments WHERE course_id = #{courseId} AND user_id = #{userId}")
+    Optional<CourseEnrollmentPO> findByCourseIdAndUserId(@Param("courseId") Long courseId, @Param("userId") Long userId);
 
-    public List<CourseEnrollmentVO> poListToVoList(List<CourseEnrollmentPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM course_enrollments WHERE user_id = #{userId}")
+    IPage<CourseEnrollmentPO> findByUserId(Page<CourseEnrollmentPO> page, @Param("userId") Long userId);
 
-    public Page<CourseEnrollmentVO> poPageToVoPage(Page<CourseEnrollmentPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM course_enrollments WHERE user_id = #{userId} AND status = #{status}")
+    IPage<CourseEnrollmentPO> findByUserIdAndStatus(Page<CourseEnrollmentPO> page, @Param("userId") Long userId, @Param("status") String status);
+
+    @Select("SELECT * FROM course_enrollments WHERE course_id = #{courseId}")
+    IPage<CourseEnrollmentPO> findByCourseId(Page<CourseEnrollmentPO> page, @Param("courseId") Long courseId);
+
+    @Select("SELECT * FROM course_enrollments WHERE course_id = #{courseId} AND status = #{status}")
+    IPage<CourseEnrollmentPO> findByCourseIdAndStatus(Page<CourseEnrollmentPO> page, @Param("courseId") Long courseId, @Param("status") String status);
+
+    @Select("SELECT COUNT(*) > 0 FROM course_enrollments WHERE course_id = #{courseId} AND user_id = #{userId}")
+    boolean existsByCourseIdAndUserId(@Param("courseId") Long courseId, @Param("userId") Long userId);
+
+    @Select("SELECT COUNT(*) FROM course_enrollments WHERE course_id = #{courseId}")
+    long countByCourseId(@Param("courseId") Long courseId);
+
+    @Select("SELECT COUNT(*) FROM course_enrollments WHERE user_id = #{userId}")
+    long countByUserId(@Param("userId") Long userId);
 }

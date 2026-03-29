@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,64 +13,28 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "collaboration_tasks")
+@TableName("collaboration_tasks")
 public class CollaborationTaskPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "project_id", nullable = false)
     private Long projectId;
-
-    @Column(nullable = false, length = 256)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "assignee_id")
     private Long assigneeId;
-
-    @Column(name = "creator_id")
     private Long creatorId;
-
-    @Column(length = 16)
     @Builder.Default
     private String status = "TODO";
-
-    @Column(length = 16)
     @Builder.Default
     private String priority = "MEDIUM";
-
-    @Column(name = "due_date")
     private LocalDate dueDate;
-
-    @Column(name = "completed_at")
     private LocalDateTime completedAt;
-
-    @Column(name = "progress")
     @Builder.Default
     private Integer progress = 0;
-
-    @Column(name = "deleted_at")
+    @TableLogic
     private LocalDateTime deletedAt;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

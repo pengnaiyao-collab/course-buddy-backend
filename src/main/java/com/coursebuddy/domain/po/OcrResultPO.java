@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,54 +12,23 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "ocr_results")
+@TableName("ocr_results")
 public class OcrResultPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "file_upload_id")
     private Long fileUploadId;
-
-    @Column(name = "object_name", nullable = false, length = 500)
     private String objectName;
-
-    @Column(name = "extracted_text", columnDefinition = "LONGTEXT")
     private String extractedText;
-
-    @Column(name = "confidence")
     private Double confidence;
-
-    @Column(name = "language", length = 16)
     @Builder.Default
     private String language = "chi_sim+eng";
-
-    @Column(name = "status", nullable = false, length = 32)
     @Builder.Default
     private String status = "PENDING";
-
-    @Column(name = "error_message", length = 1000)
     private String errorMessage;
-
-    @Column(name = "created_by")
     private Long createdBy;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

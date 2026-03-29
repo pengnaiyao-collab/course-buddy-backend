@@ -2,13 +2,15 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.LessonDTO;
 import com.coursebuddy.domain.po.LessonPO;
 import com.coursebuddy.domain.vo.LessonVO;
+import com.coursebuddy.converter.LessonConverter;
 import com.coursebuddy.mapper.LessonMapper;
-import com.coursebuddy.repository.LessonRepository;
 import com.coursebuddy.service.ILessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,8 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LessonServiceImpl implements ILessonService {
 
-    private final LessonRepository lessonRepository;
-    private final LessonMapper lessonMapper;
+    private final LessonMapper lessonRepository;
+    private final LessonConverter lessonMapper;
 
     private void checkTeacherOrAdmin(User user) {
         if (user.getRole() != Role.TEACHER && user.getRole() != Role.ADMIN) {
@@ -43,7 +45,8 @@ public class LessonServiceImpl implements ILessonService {
             int maxOrder = lessonRepository.findMaxLessonOrderByCourseId(courseId).orElse(0);
             po.setLessonOrder(maxOrder + 1);
         }
-        return lessonMapper.poToVo(lessonRepository.save(po));
+        lessonRepository.insert(po);
+        return lessonMapper.poToVo(po);
     }
 
     @Override
@@ -51,9 +54,10 @@ public class LessonServiceImpl implements ILessonService {
     public LessonVO updateLesson(Long id, LessonDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
         checkTeacherOrAdmin(currentUser);
-        LessonPO po = lessonRepository.findById(id)
-                .filter(l -> l.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Lesson not found"));
+        LessonPO po = lessonRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Lesson not found");
+        }
         if (dto.getTitle() != null) po.setTitle(dto.getTitle());
         if (dto.getDescription() != null) po.setDescription(dto.getDescription());
         if (dto.getContent() != null) po.setContent(dto.getContent());
@@ -61,7 +65,8 @@ public class LessonServiceImpl implements ILessonService {
         if (dto.getDuration() != null) po.setDuration(dto.getDuration());
         if (dto.getVideoUrl() != null) po.setVideoUrl(dto.getVideoUrl());
         if (dto.getResourceUrls() != null) po.setResourceUrls(dto.getResourceUrls());
-        return lessonMapper.poToVo(lessonRepository.save(po));
+        lessonRepository.updateById(po);
+        return lessonMapper.poToVo(po);
     }
 
     @Override
@@ -69,27 +74,30 @@ public class LessonServiceImpl implements ILessonService {
     public void deleteLesson(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
         checkTeacherOrAdmin(currentUser);
-        LessonPO po = lessonRepository.findById(id)
-                .filter(l -> l.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Lesson not found"));
+        LessonPO po = lessonRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Lesson not found");
+        }
         po.setDeletedAt(LocalDateTime.now());
-        lessonRepository.save(po);
+        lessonRepository.updateById(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public LessonVO getLesson(Long id) {
-        LessonPO po = lessonRepository.findById(id)
-                .filter(l -> l.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Lesson not found"));
+        LessonPO po = lessonRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Lesson not found");
+        }
         return lessonMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<LessonVO> listLessons(Long courseId, Pageable pageable) {
-        return lessonMapper.poPageToVoPage(
-                lessonRepository.findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(courseId, pageable));
+        IPage<LessonPO> poPage = lessonRepository.findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return lessonMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -97,11 +105,13 @@ public class LessonServiceImpl implements ILessonService {
     public LessonVO publishLesson(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
         checkTeacherOrAdmin(currentUser);
-        LessonPO po = lessonRepository.findById(id)
-                .filter(l -> l.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Lesson not found"));
+        LessonPO po = lessonRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Lesson not found");
+        }
         po.setIsPublished(true);
-        return lessonMapper.poToVo(lessonRepository.save(po));
+        lessonRepository.updateById(po);
+        return lessonMapper.poToVo(po);
     }
 
     @Override
@@ -109,15 +119,14 @@ public class LessonServiceImpl implements ILessonService {
     public void reorderLessons(Long courseId, List<Long> lessonIds) {
         User currentUser = SecurityUtils.getCurrentUser();
         checkTeacherOrAdmin(currentUser);
-        List<LessonPO> toSave = new java.util.ArrayList<>();
         for (int i = 0; i < lessonIds.size(); i++) {
             Long lessonId = lessonIds.get(i);
-            LessonPO po = lessonRepository.findById(lessonId)
-                    .filter(l -> l.getDeletedAt() == null)
-                    .orElseThrow(() -> new BusinessException(404, "Lesson not found: " + lessonId));
+            LessonPO po = lessonRepository.selectById(lessonId);
+            if (po == null || po.getDeletedAt() != null) {
+                throw new BusinessException(404, "Lesson not found: " + lessonId);
+            }
             po.setLessonOrder(i + 1);
-            toSave.add(po);
+            lessonRepository.updateById(po);
         }
-        lessonRepository.saveAll(toSave);
     }
 }

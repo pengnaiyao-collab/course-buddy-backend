@@ -1,41 +1,23 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.NoteCategoryDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.coursebuddy.domain.po.NoteCategoryPO;
-import com.coursebuddy.domain.vo.NoteCategoryVO;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class NoteCategoryMapper {
+@Mapper
+public interface NoteCategoryMapper extends BaseMapper<NoteCategoryPO> {
 
-    public NoteCategoryPO dtoToPo(NoteCategoryDTO dto) {
-        if (dto == null) return null;
-        return NoteCategoryPO.builder()
-                .name(dto.getName())
-                .color(dto.getColor())
-                .sortOrder(dto.getSortOrder() != null ? dto.getSortOrder() : 0)
-                .build();
-    }
+    @Select("SELECT * FROM note_categories WHERE user_id = #{userId} ORDER BY sort_order ASC")
+    List<NoteCategoryPO> findByUserIdOrderBySortOrderAsc(@Param("userId") Long userId);
 
-    public NoteCategoryVO poToVo(NoteCategoryPO po) {
-        if (po == null) return null;
-        return NoteCategoryVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .name(po.getName())
-                .description(po.getDescription())
-                .color(po.getColor())
-                .sortOrder(po.getSortOrder())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM note_categories WHERE id = #{id} AND user_id = #{userId}")
+    Optional<NoteCategoryPO> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
-    public List<NoteCategoryVO> poListToVoList(List<NoteCategoryPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT COUNT(*) > 0 FROM note_categories WHERE user_id = #{userId} AND name = #{name}")
+    boolean existsByUserIdAndName(@Param("userId") Long userId, @Param("name") String name);
 }

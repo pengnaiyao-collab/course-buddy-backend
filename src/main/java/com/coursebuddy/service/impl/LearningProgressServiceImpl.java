@@ -1,13 +1,15 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.LearningProgressDTO;
 import com.coursebuddy.domain.po.LearningProgressPO;
 import com.coursebuddy.domain.vo.LearningProgressVO;
+import com.coursebuddy.converter.LearningProgressConverter;
 import com.coursebuddy.mapper.LearningProgressMapper;
-import com.coursebuddy.repository.LearningProgressRepository;
 import com.coursebuddy.service.ILearningProgressService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,8 +25,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LearningProgressServiceImpl implements ILearningProgressService {
 
-    private final LearningProgressRepository progressRepository;
-    private final LearningProgressMapper progressMapper;
+    private final LearningProgressMapper progressRepository;
+    private final LearningProgressConverter progressMapper;
 
     @Override
     @Transactional
@@ -44,7 +46,12 @@ public class LearningProgressServiceImpl implements ILearningProgressService {
         }
         if (dto.getNotes() != null) po.setNotes(dto.getNotes());
         po.setLastStudiedAt(LocalDateTime.now());
-        return progressMapper.poToVo(progressRepository.save(po));
+        if (po.getId() == null) {
+            progressRepository.insert(po);
+        } else {
+            progressRepository.updateById(po);
+        }
+        return progressMapper.poToVo(po);
     }
 
     @Override
@@ -61,8 +68,9 @@ public class LearningProgressServiceImpl implements ILearningProgressService {
     @Transactional(readOnly = true)
     public Page<LearningProgressVO> listMyProgress(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return progressMapper.poPageToVoPage(
-                progressRepository.findByUserId(currentUser.getId(), pageable));
+        IPage<LearningProgressPO> poPage = progressRepository.findByUserId(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return progressMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override

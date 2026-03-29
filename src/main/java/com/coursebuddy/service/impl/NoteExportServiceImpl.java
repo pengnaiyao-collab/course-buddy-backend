@@ -4,7 +4,7 @@ import com.coursebuddy.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.NotePO;
-import com.coursebuddy.repository.NoteRepository;
+import com.coursebuddy.mapper.NoteMapper;
 import com.coursebuddy.service.INoteExportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +52,7 @@ public class NoteExportServiceImpl implements INoteExportService {
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final NoteRepository noteRepository;
+    private final NoteMapper noteRepository;
 
     /** {@inheritDoc} */
     @Override
@@ -163,8 +163,10 @@ public class NoteExportServiceImpl implements INoteExportService {
      */
     private NotePO loadNote(Long noteId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NotePO note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(404, "Note not found"));
+        NotePO note = noteRepository.selectById(noteId);
+        if (note == null) {
+            throw new BusinessException(404, "Note not found");
+        }
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to export this note");
         }

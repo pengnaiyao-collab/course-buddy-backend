@@ -1,36 +1,19 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.TaskCommentPO;
-import com.coursebuddy.domain.vo.TaskCommentVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface TaskCommentMapper extends BaseMapper<TaskCommentPO> {
 
-@Component
-public class TaskCommentMapper {
+    @Select("SELECT * FROM task_comments WHERE task_id = #{taskId} AND deleted_at IS NULL")
+    IPage<TaskCommentPO> findByTaskIdAndDeletedAtIsNull(Page<TaskCommentPO> page, @Param("taskId") Long taskId);
 
-    public TaskCommentVO poToVo(TaskCommentPO po) {
-        if (po == null) return null;
-        return TaskCommentVO.builder()
-                .id(po.getId())
-                .taskId(po.getTaskId())
-                .userId(po.getUserId())
-                .content(po.getContent())
-                .attachmentUrl(po.getAttachmentUrl())
-                .isEdited(po.getIsEdited())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<TaskCommentVO> poListToVoList(List<TaskCommentPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<TaskCommentVO> poPageToVoPage(Page<TaskCommentPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT COUNT(*) FROM task_comments WHERE task_id = #{taskId} AND deleted_at IS NULL")
+    long countByTaskIdAndDeletedAtIsNull(@Param("taskId") Long taskId);
 }

@@ -1,42 +1,25 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.GradeSheetPO;
-import com.coursebuddy.domain.vo.GradeSheetVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class GradeSheetMapper {
+@Mapper
+public interface GradeSheetMapper extends BaseMapper<GradeSheetPO> {
 
-    public GradeSheetVO poToVo(GradeSheetPO po) {
-        if (po == null) return null;
-        return GradeSheetVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .studentId(po.getStudentId())
-                .assignmentScore(po.getAssignmentScore())
-                .participationScore(po.getParticipationScore())
-                .quizScore(po.getQuizScore())
-                .midtermScore(po.getMidtermScore())
-                .finalScore(po.getFinalScore())
-                .totalScore(po.getTotalScore())
-                .grade(po.getGrade())
-                .gradeDate(po.getGradeDate())
-                .comments(po.getComments())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId} AND student_id = #{studentId}")
+    Optional<GradeSheetPO> findByCourseIdAndStudentId(@Param("courseId") Long courseId, @Param("studentId") Long studentId);
 
-    public List<GradeSheetVO> poListToVoList(List<GradeSheetPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId}")
+    IPage<GradeSheetPO> findByCourseId(Page<GradeSheetPO> page, @Param("courseId") Long courseId);
 
-    public Page<GradeSheetVO> poPageToVoPage(Page<GradeSheetPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId}")
+    List<GradeSheetPO> findByCourseId(@Param("courseId") Long courseId);
 }

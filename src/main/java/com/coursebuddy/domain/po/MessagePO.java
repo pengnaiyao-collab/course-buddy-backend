@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,36 +12,18 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "messages")
+@TableName("messages")
 public class MessagePO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "sender_id", nullable = false)
     private Long senderId;
-
-    @Column(name = "receiver_id", nullable = false)
     private Long receiverId;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-
-    @Column(name = "msg_type", nullable = false, length = 16)
     @Builder.Default
     private String msgType = "TEXT";
-
-    @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

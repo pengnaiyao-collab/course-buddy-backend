@@ -12,8 +12,8 @@ import com.coursebuddy.domain.vo.LoginResponseVO;
 import com.coursebuddy.domain.vo.RefreshTokenResponseVO;
 import com.coursebuddy.domain.vo.RegisterResponseVO;
 import com.coursebuddy.domain.vo.UserVO;
+import com.coursebuddy.converter.UserConverter;
 import com.coursebuddy.mapper.UserMapper;
-import com.coursebuddy.repository.UserRepository;
 import com.coursebuddy.service.IAuthService;
 import com.coursebuddy.service.ITokenService;
 import lombok.RequiredArgsConstructor;
@@ -31,9 +31,9 @@ import java.time.temporal.ChronoUnit;
 @Transactional
 public class AuthServiceImpl implements IAuthService {
 
-    private final UserRepository userRepository;
+    private final UserMapper userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UserMapper userMapper;
+    private final UserConverter userMapper;
     private final ITokenService tokenService;
 
     @Override
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+        userRepository.updateById(user);
 
         TokenPO token = tokenService.generateTokens(user.getId());
         long expiresIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), token.getExpiresAt());
@@ -76,7 +76,8 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         UserPO user = userMapper.registerDtoToPo(registerDto);
-        UserPO savedUser = userRepository.save(user);
+        userRepository.insert(user);
+        UserPO savedUser = user;
         log.info("User registered successfully: {}", savedUser.getId());
 
         return RegisterResponseVO.builder()
@@ -110,15 +111,17 @@ public class AuthServiceImpl implements IAuthService {
     public void changePassword(Long userId, ChangePasswordDTO changePasswordDto) {
         log.info("User change password: {}", userId);
 
-        UserPO user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        UserPO user = userRepository.selectById(userId);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
 
         if (!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())) {
             throw new BusinessException("Old password is incorrect");
         }
 
         user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
-        userRepository.save(user);
+        userRepository.updateById(user);
 
         tokenService.revokeAllUserTokens(userId);
         log.info("Password changed successfully, all tokens revoked: {}", userId);
@@ -127,8 +130,10 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional(readOnly = true)
     public UserVO getCurrentUser(Long userId) {
-        UserPO user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        UserPO user = userRepository.selectById(userId);
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found");
+        }
         return userMapper.poToVo(user);
     }
 

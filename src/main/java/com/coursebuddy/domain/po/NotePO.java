@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,81 +17,47 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "notes")
+@TableName("notes")
 public class NotePO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**
      * 乐观锁版本号，由 JPA 自动维护。
      */
-    @Version
-    @Column(name = "opt_lock_version", nullable = false)
     @Builder.Default
     private Long optLockVersion = 0L;
-
-    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @Column(name = "course_id")
     private Long courseId;
 
     /** 所属分类 ID（外键，可选）。 */
-    @Column(name = "category_id")
     private Long categoryId;
-
-    @Column(nullable = false, length = 256)
     private String title;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     /** 笔记摘要/描述（可选）。 */
-    @Column(columnDefinition = "TEXT")
     private String description;
 
     /** 笔记状态：DRAFT（草稿）、PUBLISHED（已发布）、ARCHIVED（已归档）。 */
-    @Column(length = 16, nullable = false)
     @Builder.Default
     private String status = "DRAFT";
-
-    @Column(length = 64)
     private String category;
-
-    @Column(length = 256)
     private String tags;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
     /** 是否公开（可被分享链接访问）。 */
-    @Column(name = "is_public", nullable = false)
     @Builder.Default
     private Boolean isPublic = false;
 
     /** 软删除标志。 */
-    @Column(name = "is_deleted", nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
 
     /** 软删除时间。 */
-    @Column(name = "deleted_at")
+    @TableLogic
     private LocalDateTime deletedAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

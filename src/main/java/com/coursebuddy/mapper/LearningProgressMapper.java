@@ -1,50 +1,31 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.LearningProgressDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.LearningProgressPO;
-import com.coursebuddy.domain.vo.LearningProgressVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class LearningProgressMapper {
+@Mapper
+public interface LearningProgressMapper extends BaseMapper<LearningProgressPO> {
 
-    public LearningProgressPO dtoToPo(LearningProgressDTO dto) {
-        if (dto == null) return null;
-        return LearningProgressPO.builder()
-                .courseId(dto.getCourseId())
-                .resourceId(dto.getResourceId())
-                .progress(dto.getProgress() != null ? dto.getProgress() : 0)
-                .studyMinutes(dto.getStudyMinutes() != null ? dto.getStudyMinutes() : 0)
-                .notes(dto.getNotes())
-                .build();
-    }
+    @Select("SELECT * FROM learning_progress WHERE user_id = #{userId} AND course_id = #{courseId}")
+    Optional<LearningProgressPO> findByUserIdAndCourseId(@Param("userId") Long userId, @Param("courseId") Long courseId);
 
-    public LearningProgressVO poToVo(LearningProgressPO po) {
-        if (po == null) return null;
-        return LearningProgressVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .courseId(po.getCourseId())
-                .resourceId(po.getResourceId())
-                .progress(po.getProgress())
-                .studyMinutes(po.getStudyMinutes())
-                .lastStudiedAt(po.getLastStudiedAt())
-                .notes(po.getNotes())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM learning_progress WHERE user_id = #{userId}")
+    IPage<LearningProgressPO> findByUserId(Page<LearningProgressPO> page, @Param("userId") Long userId);
 
-    public List<LearningProgressVO> poListToVoList(List<LearningProgressPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM learning_progress WHERE course_id = #{courseId}")
+    List<LearningProgressPO> findByCourseId(@Param("courseId") Long courseId);
 
-    public Page<LearningProgressVO> poPageToVoPage(Page<LearningProgressPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT AVG(progress) FROM learning_progress WHERE course_id = #{courseId}")
+    Double getAverageProgressByCourseId(@Param("courseId") Long courseId);
+
+    @Select("SELECT SUM(study_minutes) FROM learning_progress WHERE user_id = #{userId}")
+    Long getTotalStudyMinutesByUserId(@Param("userId") Long userId);
 }

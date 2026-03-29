@@ -99,9 +99,10 @@ public class MinIOFileUploadController {
 
     @PostMapping("/upload/batch")
     public ApiResponse<BatchUploadResultVO> batchUpload(
-            @RequestParam("files") MultipartFile[] files) {
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam(value = "category", required = false) String category) {
         log.info("Batch upload: {} files", files.length);
-        return ApiResponse.success("批量上传完成", uploadService.batchUpload(files));
+        return ApiResponse.success("批量上传完成", uploadService.batchUpload(files, category));
     }
 
     private void validateObjectName(String objectName) {

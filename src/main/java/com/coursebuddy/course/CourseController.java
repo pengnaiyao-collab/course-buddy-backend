@@ -1,14 +1,13 @@
 package com.coursebuddy.course;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,10 +22,12 @@ public class CourseController {
 
     @Operation(summary = "List all published courses")
     @GetMapping
-    public ApiResponse<Page<CourseResponse>> list(
+    public ApiResponse<IPage<CourseResponse>> list(
             @RequestParam(required = false) String keyword,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(courseService.listPublished(keyword, pageable));
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        Page<Course> page = new Page<>(pageNum, pageSize);
+        return ApiResponse.success(courseService.listPublished(keyword, page));
     }
 
     @Operation(summary = "Get course by ID")

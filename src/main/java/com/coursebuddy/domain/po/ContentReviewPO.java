@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,40 +12,26 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "content_reviews")
+@TableName("content_reviews")
 public class ContentReviewPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "content_type", nullable = false, length = 100)
     private String contentType;
-
-    @Column(name = "content_id", nullable = false)
     private Long contentId;
-
-    @Column(name = "reviewer_id", nullable = false)
     private Long reviewerId;
-
-    @Column(nullable = false, length = 50)
+    private Long secondReviewerId;
     @Builder.Default
     private String status = "PENDING";
-
-    @Column(length = 500)
+    @Builder.Default
+    private Integer requiredApprovals = 2;
+    @Builder.Default
+    private Integer approvalCount = 0;
+    @Builder.Default
+    private String moderationStatus = "NORMAL";
+    private String violationReason;
     private String comments;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }

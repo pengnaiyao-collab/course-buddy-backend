@@ -1,8 +1,10 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.LearningTaskDTO;
 import com.coursebuddy.domain.dto.QuestionDTO;
 import com.coursebuddy.domain.po.AnswerPO;
@@ -11,12 +13,12 @@ import com.coursebuddy.domain.po.QuestionPO;
 import com.coursebuddy.domain.vo.AnswerVO;
 import com.coursebuddy.domain.vo.LearningTaskVO;
 import com.coursebuddy.domain.vo.QuestionVO;
+import com.coursebuddy.converter.AnswerConverter;
+import com.coursebuddy.converter.LearningTaskConverter;
+import com.coursebuddy.converter.QuestionConverter;
 import com.coursebuddy.mapper.AnswerMapper;
 import com.coursebuddy.mapper.LearningTaskMapper;
 import com.coursebuddy.mapper.QuestionMapper;
-import com.coursebuddy.repository.AnswerRepository;
-import com.coursebuddy.repository.LearningTaskRepository;
-import com.coursebuddy.repository.QuestionRepository;
 import com.coursebuddy.service.IAiAssistantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,12 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AiAssistantServiceImpl implements IAiAssistantService {
 
-    private final QuestionRepository questionRepository;
-    private final AnswerRepository answerRepository;
-    private final LearningTaskRepository learningTaskRepository;
-    private final QuestionMapper questionMapper;
-    private final AnswerMapper answerMapper;
-    private final LearningTaskMapper learningTaskMapper;
+    private final QuestionMapper questionRepository;
+    private final AnswerMapper answerRepository;
+    private final LearningTaskMapper learningTaskRepository;
+    private final QuestionConverter questionMapper;
+    private final AnswerConverter answerMapper;
+    private final LearningTaskConverter learningTaskMapper;
 
     @Override
     @Transactional
@@ -41,32 +43,35 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
         User currentUser = SecurityUtils.getCurrentUser();
         QuestionPO po = questionMapper.dtoToPo(dto);
         po.setUserId(currentUser.getId());
-        QuestionPO saved = questionRepository.save(po);
+        questionRepository.insert(po);
 
         AnswerPO answer = AnswerPO.builder()
-                .questionId(saved.getId())
+                .questionId(po.getId())
                 .content("AI is processing your question: " + po.getContent())
                 .source("AI")
                 .build();
-        answerRepository.save(answer);
+        answerRepository.insert(answer);
 
-        return questionMapper.poToVo(saved);
+        return questionMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<QuestionVO> listMyQuestions(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return questionMapper.poPageToVoPage(
-                questionRepository.findByUserId(currentUser.getId(), pageable));
+        IPage<QuestionPO> poPage = questionRepository.findByUserId(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return questionMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public QuestionVO getQuestion(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        QuestionPO po = questionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Question not found"));
+        QuestionPO po = questionRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Question not found");
+        }
         if (!po.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to view this question");
         }
@@ -76,10 +81,12 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
     @Override
     @Transactional(readOnly = true)
     public Page<AnswerVO> getAnswers(Long questionId, Pageable pageable) {
-        if (!questionRepository.existsById(questionId)) {
+        if (questionRepository.selectById(questionId) == null) {
             throw new BusinessException(404, "Question not found");
         }
-        return answerMapper.poPageToVoPage(answerRepository.findByQuestionId(questionId, pageable));
+        IPage<AnswerPO> poPage = answerRepository.findByQuestionId(
+                MybatisPlusPageUtils.toMpPage(pageable), questionId);
+        return answerMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -90,7 +97,8 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
         po.setUserId(currentUser.getId());
         if (po.getStatus() == null) po.setStatus("PENDING");
         if (po.getPriority() == null) po.setPriority("MEDIUM");
-        return learningTaskMapper.poToVo(learningTaskRepository.save(po));
+        learningTaskRepository.insert(po);
+        return learningTaskMapper.poToVo(po);
     }
 
     @Override
@@ -99,18 +107,26 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
         User currentUser = SecurityUtils.getCurrentUser();
         if (status != null && !status.isBlank()) {
             return learningTaskMapper.poPageToVoPage(
-                    learningTaskRepository.findByUserIdAndStatus(currentUser.getId(), status, pageable));
+                    MybatisPlusPageUtils.toSpringPage(
+                            learningTaskRepository.findByUserIdAndStatus(
+                                    MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId(), status),
+                            pageable));
         }
         return learningTaskMapper.poPageToVoPage(
-                learningTaskRepository.findByUserId(currentUser.getId(), pageable));
+                MybatisPlusPageUtils.toSpringPage(
+                        learningTaskRepository.findByUserId(
+                                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId()),
+                        pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public LearningTaskVO getTask(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        LearningTaskPO po = learningTaskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Learning task not found"));
+        LearningTaskPO po = learningTaskRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Learning task not found");
+        }
         if (!po.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to view this task");
         }
@@ -121,8 +137,10 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
     @Transactional
     public LearningTaskVO updateTask(Long id, LearningTaskDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        LearningTaskPO po = learningTaskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Learning task not found"));
+        LearningTaskPO po = learningTaskRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Learning task not found");
+        }
         if (!po.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to update this task");
         }
@@ -131,18 +149,21 @@ public class AiAssistantServiceImpl implements IAiAssistantService {
         if (dto.getStatus() != null) po.setStatus(dto.getStatus());
         if (dto.getDueDate() != null) po.setDueDate(dto.getDueDate());
         if (dto.getPriority() != null) po.setPriority(dto.getPriority());
-        return learningTaskMapper.poToVo(learningTaskRepository.save(po));
+        learningTaskRepository.updateById(po);
+        return learningTaskMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public void deleteTask(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        LearningTaskPO po = learningTaskRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Learning task not found"));
+        LearningTaskPO po = learningTaskRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Learning task not found");
+        }
         if (!po.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to delete this task");
         }
-        learningTaskRepository.delete(po);
+        learningTaskRepository.deleteById(po.getId());
     }
 }

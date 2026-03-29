@@ -6,9 +6,9 @@ import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.NotePO;
 import com.coursebuddy.domain.po.NoteVersionPO;
 import com.coursebuddy.domain.vo.NoteVersionVO;
+import com.coursebuddy.converter.NoteVersionConverter;
+import com.coursebuddy.mapper.NoteMapper;
 import com.coursebuddy.mapper.NoteVersionMapper;
-import com.coursebuddy.repository.NoteRepository;
-import com.coursebuddy.repository.NoteVersionRepository;
 import com.coursebuddy.service.INoteVersionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,16 +20,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NoteVersionServiceImpl implements INoteVersionService {
 
-    private final NoteVersionRepository noteVersionRepository;
-    private final NoteRepository noteRepository;
-    private final NoteVersionMapper noteVersionMapper;
+    private final NoteVersionMapper noteVersionRepository;
+    private final NoteMapper noteRepository;
+    private final NoteVersionConverter noteVersionMapper;
 
     @Override
     @Transactional
     public NoteVersionVO saveVersion(Long noteId, String changeDesc) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NotePO note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(404, "Note not found"));
+        NotePO note = noteRepository.selectById(noteId);
+        if (note == null) {
+            throw new BusinessException(404, "Note not found");
+        }
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Access denied");
         }
@@ -42,15 +44,18 @@ public class NoteVersionServiceImpl implements INoteVersionService {
                 .changedBy(currentUser.getId())
                 .changeDesc(changeDesc)
                 .build();
-        return noteVersionMapper.poToVo(noteVersionRepository.save(version));
+        noteVersionRepository.insert(version);
+        return noteVersionMapper.poToVo(version);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<NoteVersionVO> listVersions(Long noteId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NotePO note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(404, "Note not found"));
+        NotePO note = noteRepository.selectById(noteId);
+        if (note == null) {
+            throw new BusinessException(404, "Note not found");
+        }
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Access denied");
         }
@@ -70,8 +75,10 @@ public class NoteVersionServiceImpl implements INoteVersionService {
     @Transactional
     public void restoreVersion(Long noteId, Integer versionNo) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NotePO note = noteRepository.findById(noteId)
-                .orElseThrow(() -> new BusinessException(404, "Note not found"));
+        NotePO note = noteRepository.selectById(noteId);
+        if (note == null) {
+            throw new BusinessException(404, "Note not found");
+        }
         if (!note.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Access denied");
         }
@@ -79,6 +86,6 @@ public class NoteVersionServiceImpl implements INoteVersionService {
                 .orElseThrow(() -> new BusinessException(404, "Version not found"));
         note.setTitle(version.getTitle());
         note.setContent(version.getContent());
-        noteRepository.save(note);
+        noteRepository.updateById(note);
     }
 }

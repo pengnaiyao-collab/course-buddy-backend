@@ -2,14 +2,16 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.AttendanceMarkDTO;
 import com.coursebuddy.domain.po.AttendancePO;
 import com.coursebuddy.domain.vo.AttendanceStatsVO;
 import com.coursebuddy.domain.vo.AttendanceVO;
+import com.coursebuddy.converter.AttendanceConverter;
 import com.coursebuddy.mapper.AttendanceMapper;
-import com.coursebuddy.repository.AttendanceRepository;
 import com.coursebuddy.service.IAttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,8 +26,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements IAttendanceService {
 
-    private final AttendanceRepository attendanceRepository;
-    private final AttendanceMapper attendanceMapper;
+    private final AttendanceMapper attendanceRepository;
+    private final AttendanceConverter attendanceMapper;
 
     @Override
     @Transactional
@@ -44,7 +46,11 @@ public class AttendanceServiceImpl implements IAttendanceService {
                             .build());
             po.setStatus(entry.getStatus() != null ? entry.getStatus() : "PRESENT");
             po.setRemarks(entry.getRemarks());
-            attendanceRepository.save(po);
+            if (po.getId() == null) {
+                attendanceRepository.insert(po);
+            } else {
+                attendanceRepository.updateById(po);
+            }
         }
     }
 
@@ -52,14 +58,17 @@ public class AttendanceServiceImpl implements IAttendanceService {
     @Transactional(readOnly = true)
     public Page<AttendanceVO> getMyAttendance(Long courseId, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return attendanceMapper.poPageToVoPage(
-                attendanceRepository.findByCourseIdAndStudentId(courseId, currentUser.getId(), pageable));
+        IPage<AttendancePO> poPage = attendanceRepository.findByCourseIdAndStudentId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId, currentUser.getId());
+        return attendanceMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AttendanceVO> getCourseAttendance(Long courseId, Pageable pageable) {
-        return attendanceMapper.poPageToVoPage(attendanceRepository.findByCourseId(courseId, pageable));
+        IPage<AttendancePO> poPage = attendanceRepository.findByCourseId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return attendanceMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override

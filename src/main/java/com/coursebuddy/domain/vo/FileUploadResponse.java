@@ -15,6 +15,7 @@ public class FileUploadResponse {
     private String objectName;
     private String fileName;
     private long fileSize;
+    private String category;
     private String uploadUrl;
     private String status;
 }

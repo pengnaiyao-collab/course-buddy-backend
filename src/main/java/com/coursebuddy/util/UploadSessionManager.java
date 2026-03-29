@@ -22,12 +22,14 @@ public class UploadSessionManager {
 
     private static final String SESSION_KEY_PREFIX = "upload:session:";
 
-    public String createSession(String fileName, long fileSize, int totalChunks, String objectName) {
+    public String createSession(String fileName, long fileSize, String category,
+                                int totalChunks, String objectName) {
         String sessionId = UUID.randomUUID().toString();
         UploadSession session = UploadSession.builder()
                 .sessionId(sessionId)
                 .fileName(fileName)
                 .fileSize(fileSize)
+                .category(category)
                 .totalChunks(totalChunks)
                 .objectName(objectName)
                 .progress(0)

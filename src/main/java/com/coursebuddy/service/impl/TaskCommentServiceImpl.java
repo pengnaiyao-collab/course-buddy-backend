@@ -1,14 +1,16 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.TaskCommentDTO;
 import com.coursebuddy.domain.po.TaskCommentPO;
 import com.coursebuddy.domain.vo.TaskCommentVO;
+import com.coursebuddy.converter.TaskCommentConverter;
+import com.coursebuddy.mapper.CollaborationTaskMapper;
 import com.coursebuddy.mapper.TaskCommentMapper;
-import com.coursebuddy.repository.CollaborationTaskRepository;
-import com.coursebuddy.repository.TaskCommentRepository;
 import com.coursebuddy.service.ITaskCommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,15 +24,15 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class TaskCommentServiceImpl implements ITaskCommentService {
 
-    private final TaskCommentRepository commentRepository;
-    private final CollaborationTaskRepository taskRepository;
-    private final TaskCommentMapper commentMapper;
+    private final TaskCommentMapper commentRepository;
+    private final CollaborationTaskMapper taskRepository;
+    private final TaskCommentConverter commentMapper;
 
     @Override
     @Transactional
     public TaskCommentVO addComment(Long taskId, TaskCommentDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        if (!taskRepository.existsById(taskId)) {
+        if (taskRepository.selectById(taskId) == null) {
             throw new BusinessException(404, "Task not found");
         }
         TaskCommentPO po = TaskCommentPO.builder()
@@ -40,7 +42,8 @@ public class TaskCommentServiceImpl implements ITaskCommentService {
                 .attachmentUrl(dto.getAttachmentUrl())
                 .isEdited(false)
                 .build();
-        return commentMapper.poToVo(commentRepository.save(po));
+        commentRepository.insert(po);
+        return commentMapper.poToVo(po);
     }
 
     @Override
@@ -54,7 +57,8 @@ public class TaskCommentServiceImpl implements ITaskCommentService {
         po.setContent(dto.getContent());
         if (dto.getAttachmentUrl() != null) po.setAttachmentUrl(dto.getAttachmentUrl());
         po.setIsEdited(true);
-        return commentMapper.poToVo(commentRepository.save(po));
+        commentRepository.updateById(po);
+        return commentMapper.poToVo(po);
     }
 
     @Override
@@ -66,17 +70,18 @@ public class TaskCommentServiceImpl implements ITaskCommentService {
             throw new BusinessException(403, "You can only delete your own comments");
         }
         po.setDeletedAt(LocalDateTime.now());
-        commentRepository.save(po);
+        commentRepository.updateById(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<TaskCommentVO> getComments(Long taskId, Pageable pageable) {
-        if (!taskRepository.existsById(taskId)) {
+        if (taskRepository.selectById(taskId) == null) {
             throw new BusinessException(404, "Task not found");
         }
-        return commentMapper.poPageToVoPage(
-                commentRepository.findByTaskIdAndDeletedAtIsNull(taskId, pageable));
+        IPage<TaskCommentPO> poPage = commentRepository.findByTaskIdAndDeletedAtIsNull(
+                MybatisPlusPageUtils.toMpPage(pageable), taskId);
+        return commentMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -86,8 +91,10 @@ public class TaskCommentServiceImpl implements ITaskCommentService {
     }
 
     private TaskCommentPO getCommentPo(Long commentId) {
-        TaskCommentPO po = commentRepository.findById(commentId)
-                .orElseThrow(() -> new BusinessException(404, "Comment not found"));
+        TaskCommentPO po = commentRepository.selectById(commentId);
+        if (po == null) {
+            throw new BusinessException(404, "Comment not found");
+        }
         if (po.getDeletedAt() != null) {
             throw new BusinessException(404, "Comment not found");
         }

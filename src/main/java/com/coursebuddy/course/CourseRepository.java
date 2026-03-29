@@ -1,21 +1,21 @@
 package com.coursebuddy.course;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-@Repository
-public interface CourseRepository extends JpaRepository<Course, Long> {
+@Mapper
+public interface CourseRepository extends BaseMapper<Course> {
 
-    Page<Course> findByStatus(CourseStatus status, Pageable pageable);
+    @Select("SELECT * FROM courses WHERE status = #{status}")
+    IPage<Course> findByStatus(Page<Course> page, @Param("status") String status);
 
-    Page<Course> findByTeacherId(Long teacherId, Pageable pageable);
+    @Select("SELECT * FROM courses WHERE teacher_id = #{teacherId}")
+    IPage<Course> findByTeacherId(Page<Course> page, @Param("teacherId") Long teacherId);
 
-    @Query("SELECT c FROM Course c WHERE c.status = com.coursebuddy.course.CourseStatus.PUBLISHED AND " +
-           "(LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(c.category) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<Course> searchPublished(@Param("keyword") String keyword, Pageable pageable);
+    @Select("SELECT * FROM courses WHERE status = 'PUBLISHED' AND (LOWER(title) LIKE CONCAT('%', LOWER(#{keyword}), '%') OR LOWER(category) LIKE CONCAT('%', LOWER(#{keyword}), '%'))")
+    IPage<Course> searchPublished(Page<Course> page, @Param("keyword") String keyword);
 }

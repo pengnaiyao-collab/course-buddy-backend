@@ -6,8 +6,8 @@ import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.dto.NoteCategoryDTO;
 import com.coursebuddy.domain.po.NoteCategoryPO;
 import com.coursebuddy.domain.vo.NoteCategoryVO;
+import com.coursebuddy.converter.NoteCategoryConverter;
 import com.coursebuddy.mapper.NoteCategoryMapper;
-import com.coursebuddy.repository.NoteCategoryRepository;
 import com.coursebuddy.service.INoteCategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NoteCategoryServiceImpl implements INoteCategoryService {
 
-    private final NoteCategoryRepository noteCategoryRepository;
-    private final NoteCategoryMapper noteCategoryMapper;
+    private final NoteCategoryMapper noteCategoryRepository;
+    private final NoteCategoryConverter noteCategoryMapper;
 
     @Override
     @Transactional
@@ -31,7 +31,8 @@ public class NoteCategoryServiceImpl implements INoteCategoryService {
         }
         NoteCategoryPO po = noteCategoryMapper.dtoToPo(dto);
         po.setUserId(currentUser.getId());
-        return noteCategoryMapper.poToVo(noteCategoryRepository.save(po));
+        noteCategoryRepository.insert(po);
+        return noteCategoryMapper.poToVo(po);
     }
 
     @Override
@@ -51,7 +52,8 @@ public class NoteCategoryServiceImpl implements INoteCategoryService {
         if (dto.getName() != null) po.setName(dto.getName());
         if (dto.getColor() != null) po.setColor(dto.getColor());
         if (dto.getSortOrder() != null) po.setSortOrder(dto.getSortOrder());
-        return noteCategoryMapper.poToVo(noteCategoryRepository.save(po));
+        noteCategoryRepository.updateById(po);
+        return noteCategoryMapper.poToVo(po);
     }
 
     @Override
@@ -60,6 +62,6 @@ public class NoteCategoryServiceImpl implements INoteCategoryService {
         User currentUser = SecurityUtils.getCurrentUser();
         NoteCategoryPO po = noteCategoryRepository.findByIdAndUserId(id, currentUser.getId())
                 .orElseThrow(() -> new BusinessException(404, "Category not found"));
-        noteCategoryRepository.delete(po);
+        noteCategoryRepository.deleteById(po.getId());
     }
 }

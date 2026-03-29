@@ -1,31 +1,23 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.coursebuddy.domain.po.TeamInvitationPO;
-import com.coursebuddy.domain.vo.TeamInvitationVO;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class TeamInvitationMapper {
+@Mapper
+public interface TeamInvitationMapper extends BaseMapper<TeamInvitationPO> {
 
-    public TeamInvitationVO poToVo(TeamInvitationPO po) {
-        if (po == null) return null;
-        return TeamInvitationVO.builder()
-                .id(po.getId())
-                .teamId(po.getTeamId())
-                .invitedUserId(po.getInvitedUserId())
-                .invitedBy(po.getInvitedBy())
-                .role(po.getRole())
-                .status(po.getStatus())
-                .expiredAt(po.getExpiredAt())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM team_invitations WHERE invited_user_id = #{invitedUserId} AND status = #{status}")
+    List<TeamInvitationPO> findByInvitedUserIdAndStatus(@Param("invitedUserId") Long invitedUserId, @Param("status") String status);
 
-    public List<TeamInvitationVO> poListToVoList(List<TeamInvitationPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM team_invitations WHERE team_id = #{teamId} AND invited_user_id = #{invitedUserId}")
+    Optional<TeamInvitationPO> findByTeamIdAndInvitedUserId(@Param("teamId") Long teamId, @Param("invitedUserId") Long invitedUserId);
+
+    @Select("SELECT COUNT(*) > 0 FROM team_invitations WHERE team_id = #{teamId} AND invited_user_id = #{invitedUserId} AND status = #{status}")
+    boolean existsByTeamIdAndInvitedUserIdAndStatus(@Param("teamId") Long teamId, @Param("invitedUserId") Long invitedUserId, @Param("status") String status);
 }

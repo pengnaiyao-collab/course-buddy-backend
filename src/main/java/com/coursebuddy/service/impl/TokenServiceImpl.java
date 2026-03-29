@@ -2,7 +2,7 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.TokenPO;
-import com.coursebuddy.repository.TokenRepository;
+import com.coursebuddy.mapper.TokenMapper;
 import com.coursebuddy.service.ITokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @Transactional
 public class TokenServiceImpl implements ITokenService {
 
-    private final TokenRepository tokenRepository;
+    private final TokenMapper tokenRepository;
 
     @Value("${jwt.secret:course-buddy-super-secret-key-for-jwt-token-signing-at-least-256-bits}")
     private String jwtSecret;
@@ -53,7 +53,8 @@ public class TokenServiceImpl implements ITokenService {
                 .isRevoked(false)
                 .build();
 
-        return tokenRepository.save(token);
+        tokenRepository.insert(token);
+        return token;
     }
 
     @Override
@@ -103,7 +104,7 @@ public class TokenServiceImpl implements ITokenService {
         }
 
         token.setIsRevoked(true);
-        tokenRepository.save(token);
+        tokenRepository.updateById(token);
 
         return generateTokens(token.getUserId());
     }
@@ -114,7 +115,7 @@ public class TokenServiceImpl implements ITokenService {
         tokenRepository.findByRefreshToken(refreshToken)
                 .ifPresent(token -> {
                     token.setIsRevoked(true);
-                    tokenRepository.save(token);
+                    tokenRepository.updateById(token);
                 });
     }
 
@@ -124,7 +125,7 @@ public class TokenServiceImpl implements ITokenService {
         tokenRepository.findByUserId(userId)
                 .forEach(token -> {
                     token.setIsRevoked(true);
-                    tokenRepository.save(token);
+                    tokenRepository.updateById(token);
                 });
     }
 

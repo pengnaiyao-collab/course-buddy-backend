@@ -1,17 +1,19 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.TeamDTO;
 import com.coursebuddy.domain.dto.TeamMemberDTO;
 import com.coursebuddy.domain.po.TeamMemberPO;
 import com.coursebuddy.domain.po.TeamPO;
 import com.coursebuddy.domain.vo.TeamMemberVO;
 import com.coursebuddy.domain.vo.TeamVO;
+import com.coursebuddy.converter.TeamConverter;
+import com.coursebuddy.mapper.TeamMemberMapper;
 import com.coursebuddy.mapper.TeamMapper;
-import com.coursebuddy.repository.TeamMemberRepository;
-import com.coursebuddy.repository.TeamRepository;
 import com.coursebuddy.service.ITeamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,9 +27,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TeamServiceImpl implements ITeamService {
 
-    private final TeamRepository teamRepository;
-    private final TeamMemberRepository teamMemberRepository;
-    private final TeamMapper teamMapper;
+    private final TeamMapper teamRepository;
+    private final TeamMemberMapper teamMemberRepository;
+    private final TeamConverter teamMapper;
 
     @Override
     @Transactional
@@ -35,13 +37,14 @@ public class TeamServiceImpl implements ITeamService {
         User currentUser = SecurityUtils.getCurrentUser();
         TeamPO team = teamMapper.dtoToPo(dto);
         team.setOwnerId(currentUser.getId());
-        TeamPO saved = teamRepository.save(team);
+        teamRepository.insert(team);
+        TeamPO saved = team;
         TeamMemberPO ownerMember = TeamMemberPO.builder()
                 .teamId(saved.getId())
                 .userId(currentUser.getId())
                 .role("OWNER")
                 .build();
-        teamMemberRepository.save(ownerMember);
+        teamMemberRepository.insert(ownerMember);
         TeamVO vo = teamMapper.poToVo(saved);
         vo.setMemberCount(1);
         return vo;
@@ -51,8 +54,9 @@ public class TeamServiceImpl implements ITeamService {
     @Transactional(readOnly = true)
     public Page<TeamVO> listMyTeams(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return teamMapper.poPageToVoPage(
-                teamRepository.findByMemberId(currentUser.getId(), pageable))
+        IPage<TeamPO> poPage = teamRepository.findByMemberId(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return teamMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable))
                 .map(vo -> {
                     vo.setMemberCount((int) teamMemberRepository.countByTeamId(vo.getId()));
                     return vo;
@@ -62,8 +66,10 @@ public class TeamServiceImpl implements ITeamService {
     @Override
     @Transactional(readOnly = true)
     public TeamVO getTeamById(Long id) {
-        TeamPO po = teamRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO po = teamRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         TeamVO vo = teamMapper.poToVo(po);
         List<TeamMemberVO> members = teamMapper.memberPoListToVoList(
                 teamMemberRepository.findByTeamId(id));
@@ -76,35 +82,42 @@ public class TeamServiceImpl implements ITeamService {
     @Transactional
     public TeamVO updateTeam(Long id, TeamDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TeamPO po = teamRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO po = teamRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         if (!po.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the team owner can update the team");
         }
         if (dto.getName() != null) po.setName(dto.getName());
         if (dto.getDescription() != null) po.setDescription(dto.getDescription());
         if (dto.getAvatarUrl() != null) po.setAvatarUrl(dto.getAvatarUrl());
-        return teamMapper.poToVo(teamRepository.save(po));
+        teamRepository.updateById(po);
+        return teamMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public void deleteTeam(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TeamPO po = teamRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO po = teamRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         if (!po.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the team owner can delete the team");
         }
-        teamRepository.delete(po);
+        teamRepository.deleteById(po.getId());
     }
 
     @Override
     @Transactional
     public TeamMemberVO addMember(Long teamId, TeamMemberDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TeamPO team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO team = teamRepository.selectById(teamId);
+        if (team == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         if (!team.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the team owner can add members");
         }
@@ -116,15 +129,18 @@ public class TeamServiceImpl implements ITeamService {
                 .userId(dto.getUserId())
                 .role(dto.getRole() != null ? dto.getRole() : "MEMBER")
                 .build();
-        return teamMapper.memberPoToVo(teamMemberRepository.save(member));
+        teamMemberRepository.insert(member);
+        return teamMapper.memberPoToVo(member);
     }
 
     @Override
     @Transactional
     public void removeMember(Long teamId, Long userId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TeamPO team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO team = teamRepository.selectById(teamId);
+        if (team == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         if (!team.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the team owner can remove members");
         }
@@ -135,15 +151,18 @@ public class TeamServiceImpl implements ITeamService {
     @Transactional
     public TeamMemberVO updateMemberRole(Long teamId, Long userId, String role) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TeamPO team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new BusinessException(404, "Team not found"));
+        TeamPO team = teamRepository.selectById(teamId);
+        if (team == null) {
+            throw new BusinessException(404, "Team not found");
+        }
         if (!team.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Only the team owner can update member roles");
         }
         TeamMemberPO member = teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
                 .orElseThrow(() -> new BusinessException(404, "Member not found"));
         member.setRole(role);
-        return teamMapper.memberPoToVo(teamMemberRepository.save(member));
+        teamMemberRepository.updateById(member);
+        return teamMapper.memberPoToVo(member);
     }
 
     @Override

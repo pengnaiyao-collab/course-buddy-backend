@@ -1,14 +1,16 @@
 package com.coursebuddy.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.dto.GradeUpdateDTO;
 import com.coursebuddy.domain.po.GradeSheetPO;
 import com.coursebuddy.domain.vo.GradeSheetVO;
+import com.coursebuddy.converter.GradeSheetConverter;
 import com.coursebuddy.mapper.GradeSheetMapper;
-import com.coursebuddy.repository.GradeSheetRepository;
 import com.coursebuddy.service.IGradeSheetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,8 +24,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class GradeSheetServiceImpl implements IGradeSheetService {
 
-    private final GradeSheetRepository gradeSheetRepository;
-    private final GradeSheetMapper gradeSheetMapper;
+    private final GradeSheetMapper gradeSheetRepository;
+    private final GradeSheetConverter gradeSheetMapper;
 
     @Override
     @Transactional
@@ -34,7 +36,8 @@ public class GradeSheetServiceImpl implements IGradeSheetService {
                             .courseId(courseId)
                             .studentId(studentId)
                             .build();
-                    return gradeSheetRepository.save(newPo);
+                    gradeSheetRepository.insert(newPo);
+                    return newPo;
                 });
         return gradeSheetMapper.poToVo(po);
     }
@@ -47,10 +50,14 @@ public class GradeSheetServiceImpl implements IGradeSheetService {
             throw new BusinessException(403, "Only teachers and admins can update grade sheets");
         }
         GradeSheetPO po = gradeSheetRepository.findByCourseIdAndStudentId(courseId, studentId)
-                .orElseGet(() -> gradeSheetRepository.save(GradeSheetPO.builder()
-                        .courseId(courseId)
-                        .studentId(studentId)
-                        .build()));
+                .orElseGet(() -> {
+                    GradeSheetPO created = GradeSheetPO.builder()
+                            .courseId(courseId)
+                            .studentId(studentId)
+                            .build();
+                    gradeSheetRepository.insert(created);
+                    return created;
+                });
         if (dto.getAssignmentScore() != null) po.setAssignmentScore(dto.getAssignmentScore());
         if (dto.getParticipationScore() != null) po.setParticipationScore(dto.getParticipationScore());
         if (dto.getQuizScore() != null) po.setQuizScore(dto.getQuizScore());
@@ -63,7 +70,8 @@ public class GradeSheetServiceImpl implements IGradeSheetService {
         po.setGrade(calculateLetterGrade(total));
         po.setGradeDate(LocalDateTime.now());
 
-        return gradeSheetMapper.poToVo(gradeSheetRepository.save(po));
+        gradeSheetRepository.updateById(po);
+        return gradeSheetMapper.poToVo(po);
     }
 
     @Override
@@ -78,7 +86,9 @@ public class GradeSheetServiceImpl implements IGradeSheetService {
     @Override
     @Transactional(readOnly = true)
     public Page<GradeSheetVO> listCourseGrades(Long courseId, Pageable pageable) {
-        return gradeSheetMapper.poPageToVoPage(gradeSheetRepository.findByCourseId(courseId, pageable));
+        IPage<GradeSheetPO> poPage = gradeSheetRepository.findByCourseId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return gradeSheetMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     private int calculateTotalScore(GradeSheetPO po) {

@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -8,59 +8,27 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "lessons")
+@TableName("lessons")
 public class LessonPO {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "course_id", nullable = false)
     private Long courseId;
-
-    @Column(nullable = false, length = 256)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(columnDefinition = "TEXT")
     private String content;
-
-    @Column(name = "lesson_order", nullable = false)
     @Builder.Default
     private Integer lessonOrder = 1;
 
     @Builder.Default
     private Integer duration = 0;
-
-    @Column(name = "video_url", length = 512)
     private String videoUrl;
-
-    @Column(name = "resource_urls", columnDefinition = "TEXT")
     private String resourceUrls;
-
-    @Column(name = "is_published")
     @Builder.Default
     private Boolean isPublished = false;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @Column(name = "deleted_at")
+    @TableLogic
     private LocalDateTime deletedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

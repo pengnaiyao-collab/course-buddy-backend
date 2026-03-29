@@ -1,7 +1,11 @@
 package com.coursebuddy.controller;
 
 import com.coursebuddy.common.response.ApiResponse;
+import com.coursebuddy.domain.dto.CourseActionPermissionUpdateDTO;
+import com.coursebuddy.domain.dto.CourseAdminVoteDTO;
 import com.coursebuddy.domain.dto.CoursePermissionDTO;
+import com.coursebuddy.domain.vo.CourseActionPermissionVO;
+import com.coursebuddy.domain.vo.CourseAdminVoteVO;
 import com.coursebuddy.domain.vo.CoursePermissionVO;
 import com.coursebuddy.service.ICoursePermissionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -76,5 +80,38 @@ public class CoursePermissionController {
             @RequestParam Long courseId,
             @RequestParam(defaultValue = "L4") String minLevel) {
         return ApiResponse.success(permissionService.hasPermission(courseId, minLevel));
+    }
+
+    @Operation(summary = "获取课程动作权限矩阵", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/course/{courseId}/matrix")
+    public ApiResponse<List<CourseActionPermissionVO>> getActionMatrix(@PathVariable Long courseId) {
+        return ApiResponse.success(permissionService.getActionPermissionMatrix(courseId));
+    }
+
+    @Operation(summary = "更新课程动作权限矩阵", security = @SecurityRequirement(name = "bearerAuth"))
+    @PutMapping("/matrix")
+    public ApiResponse<CourseActionPermissionVO> updateActionMatrix(
+            @Valid @RequestBody CourseActionPermissionUpdateDTO dto) {
+        return ApiResponse.success(permissionService.updateActionPermission(dto));
+    }
+
+    @Operation(summary = "检查当前用户某动作权限", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/course/{courseId}/actions/check")
+    public ApiResponse<Boolean> checkActionPermission(
+            @PathVariable Long courseId,
+            @RequestParam String actionKey) {
+        return ApiResponse.success(permissionService.hasActionPermission(courseId, actionKey));
+    }
+
+    @Operation(summary = "管理员候选人投票", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/admin/vote")
+    public ApiResponse<CourseAdminVoteVO> voteAdmin(@Valid @RequestBody CourseAdminVoteDTO dto) {
+        return ApiResponse.success(permissionService.voteAdmin(dto.getCourseId(), dto.getCandidateUserId()));
+    }
+
+    @Operation(summary = "管理员轮值", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/admin/rotate")
+    public ApiResponse<CourseAdminVoteVO> rotateAdmin(@Valid @RequestBody CourseAdminVoteDTO dto) {
+        return ApiResponse.success(permissionService.rotateAdmin(dto.getCourseId(), dto.getCandidateUserId()));
     }
 }

@@ -19,6 +19,8 @@ public class KnowledgeItemDTO {
 
     private String description;
 
+    private String content;
+
     @Size(max = 512, message = "File URL must not exceed 512 characters")
     private String fileUrl;
 
@@ -30,4 +32,10 @@ public class KnowledgeItemDTO {
 
     @Size(max = 256, message = "Tags must not exceed 256 characters")
     private String tags;
+
+    @Size(max = 64, message = "Source type must not exceed 64 characters")
+    private String sourceType;
+
+    @Size(max = 32, message = "Status must not exceed 32 characters")
+    private String status;
 }

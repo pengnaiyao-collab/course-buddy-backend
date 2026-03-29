@@ -2,16 +2,18 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.AssignmentSubmissionDTO;
 import com.coursebuddy.domain.dto.GradeSubmissionDTO;
 import com.coursebuddy.domain.po.AssignmentPO;
 import com.coursebuddy.domain.po.AssignmentSubmissionPO;
 import com.coursebuddy.domain.vo.AssignmentSubmissionVO;
+import com.coursebuddy.converter.AssignmentSubmissionConverter;
+import com.coursebuddy.mapper.AssignmentMapper;
 import com.coursebuddy.mapper.AssignmentSubmissionMapper;
-import com.coursebuddy.repository.AssignmentRepository;
-import com.coursebuddy.repository.AssignmentSubmissionRepository;
 import com.coursebuddy.service.IAssignmentSubmissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,9 +27,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AssignmentSubmissionServiceImpl implements IAssignmentSubmissionService {
 
-    private final AssignmentSubmissionRepository submissionRepository;
-    private final AssignmentRepository assignmentRepository;
-    private final AssignmentSubmissionMapper submissionMapper;
+    private final AssignmentSubmissionMapper submissionRepository;
+    private final AssignmentMapper assignmentRepository;
+    private final AssignmentSubmissionConverter submissionMapper;
 
     @Override
     @Transactional
@@ -39,9 +41,10 @@ public class AssignmentSubmissionServiceImpl implements IAssignmentSubmissionSer
         if (submissionRepository.findByAssignmentIdAndStudentId(assignmentId, currentUser.getId()).isPresent()) {
             throw new BusinessException(409, "You have already submitted this assignment");
         }
-        AssignmentPO assignment = assignmentRepository.findById(assignmentId)
-                .filter(a -> a.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Assignment not found"));
+        AssignmentPO assignment = assignmentRepository.selectById(assignmentId);
+        if (assignment == null || assignment.getDeletedAt() != null) {
+            throw new BusinessException(404, "Assignment not found");
+        }
 
         String status = "SUBMITTED";
         if (assignment.getDueDate() != null && LocalDateTime.now().isAfter(assignment.getDueDate())) {
@@ -55,34 +58,42 @@ public class AssignmentSubmissionServiceImpl implements IAssignmentSubmissionSer
                 .submittedAt(LocalDateTime.now())
                 .status(status)
                 .build();
-        return submissionMapper.poToVo(submissionRepository.save(po));
+        submissionRepository.insert(po);
+        return submissionMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public AssignmentSubmissionVO updateSubmission(Long id, AssignmentSubmissionDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        AssignmentSubmissionPO po = submissionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Submission not found"));
+        AssignmentSubmissionPO po = submissionRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Submission not found");
+        }
         if (!po.getStudentId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Not authorized to update this submission");
         }
         po.setSubmissionUrl(dto.getSubmissionUrl());
-        return submissionMapper.poToVo(submissionRepository.save(po));
+        submissionRepository.updateById(po);
+        return submissionMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AssignmentSubmissionVO getSubmission(Long id) {
-        AssignmentSubmissionPO po = submissionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Submission not found"));
+        AssignmentSubmissionPO po = submissionRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Submission not found");
+        }
         return submissionMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AssignmentSubmissionVO> listSubmissions(Long assignmentId, Pageable pageable) {
-        return submissionMapper.poPageToVoPage(submissionRepository.findByAssignmentId(assignmentId, pageable));
+        IPage<AssignmentSubmissionPO> poPage = submissionRepository.findByAssignmentId(
+                MybatisPlusPageUtils.toMpPage(pageable), assignmentId);
+        return submissionMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -92,14 +103,17 @@ public class AssignmentSubmissionServiceImpl implements IAssignmentSubmissionSer
         if (currentUser.getRole() != Role.TEACHER && currentUser.getRole() != Role.ADMIN) {
             throw new BusinessException(403, "Only teachers and admins can grade submissions");
         }
-        AssignmentSubmissionPO po = submissionRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Submission not found"));
+        AssignmentSubmissionPO po = submissionRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Submission not found");
+        }
         po.setScore(dto.getScore());
         po.setFeedback(dto.getFeedback());
         po.setGradedAt(LocalDateTime.now());
         po.setGradedBy(currentUser.getId());
         po.setStatus("GRADED");
-        return submissionMapper.poToVo(submissionRepository.save(po));
+        submissionRepository.updateById(po);
+        return submissionMapper.poToVo(po);
     }
 
     @Override

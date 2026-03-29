@@ -1,38 +1,26 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.NoteTagDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.coursebuddy.domain.po.NoteTagPO;
-import com.coursebuddy.domain.vo.NoteTagVO;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class NoteTagMapper {
+@Mapper
+public interface NoteTagMapper extends BaseMapper<NoteTagPO> {
 
-    public NoteTagPO dtoToPo(NoteTagDTO dto) {
-        if (dto == null) return null;
-        return NoteTagPO.builder()
-                .name(dto.getName())
-                .color(dto.getColor())
-                .build();
-    }
+    @Select("SELECT * FROM note_tags WHERE user_id = #{userId} ORDER BY use_count DESC")
+    List<NoteTagPO> findByUserIdOrderByUseCountDesc(@Param("userId") Long userId);
 
-    public NoteTagVO poToVo(NoteTagPO po) {
-        if (po == null) return null;
-        return NoteTagVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .name(po.getName())
-                .color(po.getColor())
-                .useCount(po.getUseCount())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM note_tags WHERE id = #{id} AND user_id = #{userId}")
+    Optional<NoteTagPO> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
-    public List<NoteTagVO> poListToVoList(List<NoteTagPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM note_tags WHERE user_id = #{userId} AND name = #{name}")
+    Optional<NoteTagPO> findByUserIdAndName(@Param("userId") Long userId, @Param("name") String name);
+
+    @Select("SELECT * FROM note_tags WHERE user_id = #{userId} AND LOWER(name) LIKE LOWER(CONCAT('%', #{keyword}, '%'))")
+    List<NoteTagPO> findByUserIdAndNameContainingIgnoreCase(@Param("userId") Long userId, @Param("keyword") String keyword);
 }

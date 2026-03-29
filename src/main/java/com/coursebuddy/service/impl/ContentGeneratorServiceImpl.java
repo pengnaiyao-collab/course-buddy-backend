@@ -1,17 +1,19 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.client.XunFeiSparkClient;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.config.XunFeiProperties;
 import com.coursebuddy.domain.dto.GenerateContentDTO;
 import com.coursebuddy.domain.po.AiUsageStatsPO;
 import com.coursebuddy.domain.po.GeneratedContentPO;
 import com.coursebuddy.domain.vo.GeneratedContentVO;
+import com.coursebuddy.converter.GeneratedContentConverter;
+import com.coursebuddy.mapper.AiUsageStatsMapper;
 import com.coursebuddy.mapper.GeneratedContentMapper;
-import com.coursebuddy.repository.AiUsageStatsRepository;
-import com.coursebuddy.repository.GeneratedContentRepository;
 import com.coursebuddy.service.IContentGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +32,9 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
 
     private final XunFeiSparkClient sparkClient;
     private final XunFeiProperties properties;
-    private final GeneratedContentRepository contentRepository;
-    private final AiUsageStatsRepository usageStatsRepository;
-    private final GeneratedContentMapper contentMapper;
+    private final GeneratedContentMapper contentRepository;
+    private final AiUsageStatsMapper usageStatsRepository;
+    private final GeneratedContentConverter contentMapper;
 
     @Override
     @Transactional
@@ -79,7 +81,7 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
                 .prompt(prompt)
                 .status("PENDING")
                 .build();
-        po = contentRepository.save(po);
+        contentRepository.insert(po);
 
         try {
             List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", prompt));
@@ -88,7 +90,7 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
             po.setContent(result.content());
             po.setStatus("COMPLETED");
             po.setTokenCount(result.totalTokens());
-            po = contentRepository.save(po);
+            contentRepository.updateById(po);
 
             recordUsageStats(currentUser.getId(), dto.getContentType(), result.promptTokens(),
                     result.completionTokens(), System.currentTimeMillis() - startTime, "SUCCESS", null);
@@ -98,7 +100,7 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
         } catch (Exception e) {
             log.error("Content generation failed for user {}, type {}", currentUser.getId(), dto.getContentType(), e);
             po.setStatus("FAILED");
-            contentRepository.save(po);
+            contentRepository.updateById(po);
 
             recordUsageStats(currentUser.getId(), dto.getContentType(), 0, 0,
                     System.currentTimeMillis() - startTime, "FAILED", e.getMessage());
@@ -112,20 +114,25 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
     public Page<GeneratedContentVO> listGeneratedContents(String contentType, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
         if (contentType != null && !contentType.isBlank()) {
+            IPage<GeneratedContentPO> poPage = contentRepository.findByUserIdAndContentTypeOrderByCreatedAtDesc(
+                    MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId(), contentType.toUpperCase());
             return contentMapper.poPageToVoPage(
-                    contentRepository.findByUserIdAndContentTypeOrderByCreatedAtDesc(
-                            currentUser.getId(), contentType.toUpperCase(), pageable));
+                    MybatisPlusPageUtils.toSpringPage(poPage, pageable));
         }
+        IPage<GeneratedContentPO> poPage = contentRepository.findByUserIdOrderByCreatedAtDesc(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
         return contentMapper.poPageToVoPage(
-                contentRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId(), pageable));
+                MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public GeneratedContentVO getGeneratedContent(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        GeneratedContentPO po = contentRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "生成内容不存在"));
+        GeneratedContentPO po = contentRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "生成内容不存在");
+        }
         if (!po.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "无权访问该内容");
         }
@@ -183,7 +190,7 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
                     .status(status)
                     .errorMessage(errorMessage)
                     .build();
-            usageStatsRepository.save(stats);
+            usageStatsRepository.insert(stats);
         } catch (Exception e) {
             log.warn("Failed to record AI usage stats", e);
         }

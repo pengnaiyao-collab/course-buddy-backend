@@ -1,7 +1,7 @@
 package com.coursebuddy.aop;
 
 import com.coursebuddy.domain.po.AuditLogPO;
-import com.coursebuddy.repository.AuditLogRepository;
+import com.coursebuddy.mapper.AuditLogMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
 @RequiredArgsConstructor
 public class AuditLogAspect {
 
-    private final AuditLogRepository auditLogRepository;
+    private final AuditLogMapper auditLogRepository;
 
     @Around("@annotation(com.coursebuddy.aop.AuditLog)")
     public Object logAudit(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -60,7 +60,7 @@ public class AuditLogAspect {
         Object result = joinPoint.proceed();
 
         try {
-            auditLogRepository.save(AuditLogPO.builder()
+            auditLogRepository.insert(AuditLogPO.builder()
                     .entityType(entityType)
                     .action(action)
                     .operatorId(operatorId)

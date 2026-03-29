@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,52 +12,27 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "knowledge_items")
+@TableName("knowledge_items")
 public class KnowledgeItemPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "course_id", nullable = false)
     private Long courseId;
-
-    @Column(nullable = false, length = 256)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "file_url", length = 512)
+    private String content;
     private String fileUrl;
-
-    @Column(name = "file_type", length = 64)
     private String fileType;
-
-    @Column(length = 64)
     private String category;
-
-    @Column(length = 256)
     private String tags;
-
-    @Column(name = "created_by")
+    private String extractedText;
+    @Builder.Default
+    private String sourceType = "MANUAL";
+    @Builder.Default
+    private String status = "PUBLISHED";
     private Long createdBy;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -1,18 +1,20 @@
 package com.coursebuddy.service.impl;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.dto.CourseDTO;
 import com.coursebuddy.domain.po.CoursePO;
 import com.coursebuddy.domain.vo.CourseStatsVO;
 import com.coursebuddy.domain.vo.CourseVO;
-import com.coursebuddy.mapper.CourseMapper;
-import com.coursebuddy.repository.AssignmentRepository;
-import com.coursebuddy.repository.CourseCatalogRepository;
-import com.coursebuddy.repository.CourseEnrollmentRepository;
-import com.coursebuddy.repository.LessonRepository;
+import com.coursebuddy.converter.CourseConverter;
+import com.coursebuddy.mapper.AssignmentMapper;
+import com.coursebuddy.mapper.CourseCatalogMapper;
+import com.coursebuddy.mapper.CourseEnrollmentMapper;
+import com.coursebuddy.mapper.LessonMapper;
 import com.coursebuddy.service.ICourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,11 +28,11 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CourseServiceImpl implements ICourseService {
 
-    private final CourseCatalogRepository courseRepository;
-    private final CourseEnrollmentRepository enrollmentRepository;
-    private final LessonRepository lessonRepository;
-    private final AssignmentRepository assignmentRepository;
-    private final CourseMapper courseMapper;
+    private final CourseCatalogMapper courseRepository;
+    private final CourseEnrollmentMapper enrollmentRepository;
+    private final LessonMapper lessonRepository;
+    private final AssignmentMapper assignmentRepository;
+    private final CourseConverter courseMapper;
 
     @Override
     @Transactional
@@ -41,16 +43,18 @@ public class CourseServiceImpl implements ICourseService {
         }
         CoursePO po = courseMapper.dtoToPo(dto);
         po.setInstructorId(currentUser.getId());
-        return courseMapper.poToVo(courseRepository.save(po));
+        courseRepository.insert(po);
+        return courseMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public CourseVO updateCourse(Long id, CourseDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        CoursePO po = courseRepository.findById(id)
-                .filter(c -> c.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
+        CoursePO po = courseRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Course not found");
+        }
         if (currentUser.getRole() != Role.ADMIN && !po.getInstructorId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Not authorized to update this course");
         }
@@ -67,60 +71,69 @@ public class CourseServiceImpl implements ICourseService {
         if (dto.getStartDate() != null) po.setStartDate(dto.getStartDate());
         if (dto.getEndDate() != null) po.setEndDate(dto.getEndDate());
         if (dto.getDepartmentId() != null) po.setDepartmentId(dto.getDepartmentId());
-        return courseMapper.poToVo(courseRepository.save(po));
+        courseRepository.updateById(po);
+        return courseMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public void deleteCourse(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
-        CoursePO po = courseRepository.findById(id)
-                .filter(c -> c.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
+        CoursePO po = courseRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Course not found");
+        }
         if (currentUser.getRole() != Role.ADMIN && !po.getInstructorId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Not authorized to delete this course");
         }
         po.setDeletedAt(LocalDateTime.now());
-        courseRepository.save(po);
+        courseRepository.updateById(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public CourseVO getCourse(Long id) {
-        CoursePO po = courseRepository.findById(id)
-                .filter(c -> c.getDeletedAt() == null)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
+        CoursePO po = courseRepository.selectById(id);
+        if (po == null || po.getDeletedAt() != null) {
+            throw new BusinessException(404, "Course not found");
+        }
         return courseMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CourseVO> listAllCourses(Pageable pageable) {
-        return courseMapper.poPageToVoPage(courseRepository.findByDeletedAtIsNull(pageable));
+        IPage<CoursePO> poPage = courseRepository.findByDeletedAtIsNull(MybatisPlusPageUtils.toMpPage(pageable));
+        return courseMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CourseVO> listMyTeachingCourses(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return courseMapper.poPageToVoPage(
-                courseRepository.findByInstructorIdAndDeletedAtIsNull(currentUser.getId(), pageable));
+        IPage<CoursePO> poPage = courseRepository.findByInstructorIdAndDeletedAtIsNull(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return courseMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CourseVO> searchCourses(String keyword, String level, Pageable pageable) {
-        return courseMapper.poPageToVoPage(courseRepository.searchCourses(keyword, level, pageable));
+        IPage<CoursePO> poPage = courseRepository.searchCourses(
+                MybatisPlusPageUtils.toMpPage(pageable), keyword, level);
+        return courseMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public CourseStatsVO getCourseStats(Long courseId) {
         long totalEnrollments = enrollmentRepository.countByCourseId(courseId);
-        long activeEnrollments = enrollmentRepository.findByCourseIdAndStatus(courseId, "ACTIVE",
-                org.springframework.data.domain.Pageable.unpaged()).getTotalElements();
-        long completedEnrollments = enrollmentRepository.findByCourseIdAndStatus(courseId, "COMPLETED",
-                org.springframework.data.domain.Pageable.unpaged()).getTotalElements();
+        long activeEnrollments = enrollmentRepository.findByCourseIdAndStatus(
+                MybatisPlusPageUtils.toMpPage(org.springframework.data.domain.Pageable.unpaged()),
+                courseId, "ACTIVE").getTotal();
+        long completedEnrollments = enrollmentRepository.findByCourseIdAndStatus(
+                MybatisPlusPageUtils.toMpPage(org.springframework.data.domain.Pageable.unpaged()),
+                courseId, "COMPLETED").getTotal();
         long totalLessons = lessonRepository.countByCourseIdAndDeletedAtIsNull(courseId);
         long publishedLessons = lessonRepository.countByCourseIdAndIsPublishedTrueAndDeletedAtIsNull(courseId);
         long totalAssignments = assignmentRepository.countByCourseIdAndDeletedAtIsNull(courseId);

@@ -17,10 +17,14 @@ public class KnowledgeItemVO {
     private Long courseId;
     private String title;
     private String description;
+    private String content;
     private String fileUrl;
     private String fileType;
     private String category;
     private String tags;
+    private String extractedText;
+    private String sourceType;
+    private String status;
     private Long createdBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

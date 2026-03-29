@@ -1,37 +1,28 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.NoteSharePO;
-import com.coursebuddy.domain.vo.NoteShareVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class NoteShareMapper {
+@Mapper
+public interface NoteShareMapper extends BaseMapper<NoteSharePO> {
 
-    public NoteShareVO poToVo(NoteSharePO po) {
-        if (po == null) return null;
-        return NoteShareVO.builder()
-                .id(po.getId())
-                .noteId(po.getNoteId())
-                .ownerId(po.getOwnerId())
-                .shareToken(po.getShareToken())
-                .permission(po.getPermission())
-                .expiresAt(po.getExpiresAt())
-                .accessCount(po.getAccessCount())
-                .isActive(po.getIsActive())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM note_shares WHERE share_token = #{shareToken}")
+    Optional<NoteSharePO> findByShareToken(@Param("shareToken") String shareToken);
 
-    public List<NoteShareVO> poListToVoList(List<NoteSharePO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM note_shares WHERE owner_id = #{ownerId} ORDER BY created_at DESC")
+    IPage<NoteSharePO> findByOwnerIdOrderByCreatedAtDesc(Page<NoteSharePO> page, @Param("ownerId") Long ownerId);
 
-    public Page<NoteShareVO> poPageToVoPage(Page<NoteSharePO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM note_shares WHERE note_id = #{noteId} AND owner_id = #{ownerId} ORDER BY created_at DESC")
+    IPage<NoteSharePO> findByNoteIdAndOwnerIdOrderByCreatedAtDesc(Page<NoteSharePO> page, @Param("noteId") Long noteId, @Param("ownerId") Long ownerId);
+
+    @Update("UPDATE note_shares SET access_count = access_count + 1 WHERE id = #{id}")
+    int incrementAccessCount(@Param("id") Long id);
 }

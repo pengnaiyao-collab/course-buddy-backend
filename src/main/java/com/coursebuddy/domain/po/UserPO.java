@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,61 +12,24 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity(name = "UserPO")
-@Table(name = "users")
+@TableName("users")
 public class UserPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(nullable = false, unique = true, length = 64)
     private String username;
-
-    @Column(nullable = false, unique = true, length = 128)
     private String email;
-
-    @Column(nullable = false)
     private String password;
-
-    @Column(name = "real_name", length = 50)
     private String realName;
-
-    @Column(length = 20)
     private String phone;
-
-    @Column(columnDefinition = "TEXT")
     private String avatar;
-
-    @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
-
-    @Column(columnDefinition = "TEXT")
     private String bio;
-
-    @Column(name = "is_active")
     private Boolean isActive = true;
-
-    @Column(name = "is_locked")
     private Boolean isLocked = false;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

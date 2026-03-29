@@ -1,50 +1,28 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.CourseDiscussionDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CourseDiscussionPO;
-import com.coursebuddy.domain.vo.CourseDiscussionVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public class CourseDiscussionMapper {
+@Mapper
+public interface CourseDiscussionMapper extends BaseMapper<CourseDiscussionPO> {
 
-    public CourseDiscussionPO dtoToPo(CourseDiscussionDTO dto) {
-        if (dto == null) return null;
-        return CourseDiscussionPO.builder()
-                .courseId(dto.getCourseId())
-                .parentId(dto.getParentId())
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .build();
-    }
+    @Select("SELECT * FROM course_discussions WHERE course_id = #{courseId} AND parent_id IS NULL AND is_deleted = false")
+    IPage<CourseDiscussionPO> findByCourseIdAndParentIdIsNullAndIsDeletedFalse(Page<CourseDiscussionPO> page, @Param("courseId") Long courseId);
 
-    public CourseDiscussionVO poToVo(CourseDiscussionPO po) {
-        if (po == null) return null;
-        return CourseDiscussionVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .parentId(po.getParentId())
-                .authorId(po.getAuthorId())
-                .title(po.getTitle())
-                .content(po.getContent())
-                .likeCount(po.getLikeCount())
-                .isPinned(po.getIsPinned())
-                .likedByMe(false)
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM course_discussions WHERE parent_id = #{parentId} AND is_deleted = false ORDER BY created_at ASC")
+    List<CourseDiscussionPO> findByParentIdAndIsDeletedFalseOrderByCreatedAtAsc(@Param("parentId") Long parentId);
 
-    public List<CourseDiscussionVO> poListToVoList(List<CourseDiscussionPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT COUNT(*) FROM course_discussions WHERE course_id = #{courseId} AND parent_id IS NULL AND is_deleted = false")
+    long countByCourseIdAndParentIdIsNullAndIsDeletedFalse(@Param("courseId") Long courseId);
 
-    public Page<CourseDiscussionVO> poPageToVoPage(Page<CourseDiscussionPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Update("UPDATE course_discussions SET like_count = like_count + 1 WHERE id = #{id}")
+    int incrementLikeCount(@Param("id") Long id);
 }

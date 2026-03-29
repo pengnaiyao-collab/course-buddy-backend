@@ -1,36 +1,35 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.AttendancePO;
-import com.coursebuddy.domain.vo.AttendanceVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class AttendanceMapper {
+@Mapper
+public interface AttendanceMapper extends BaseMapper<AttendancePO> {
 
-    public AttendanceVO poToVo(AttendancePO po) {
-        if (po == null) return null;
-        return AttendanceVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .studentId(po.getStudentId())
-                .sessionDate(po.getSessionDate())
-                .status(po.getStatus())
-                .remarks(po.getRemarks())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId}")
+    IPage<AttendancePO> findByCourseIdAndStudentId(Page<AttendancePO> page, @Param("courseId") Long courseId, @Param("studentId") Long studentId);
 
-    public List<AttendanceVO> poListToVoList(List<AttendancePO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId}")
+    IPage<AttendancePO> findByCourseId(Page<AttendancePO> page, @Param("courseId") Long courseId);
 
-    public Page<AttendanceVO> poPageToVoPage(Page<AttendancePO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND session_date = #{sessionDate}")
+    List<AttendancePO> findByCourseIdAndSessionDate(@Param("courseId") Long courseId, @Param("sessionDate") LocalDate sessionDate);
+
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId} AND session_date = #{sessionDate}")
+    Optional<AttendancePO> findByCourseIdAndStudentIdAndSessionDate(@Param("courseId") Long courseId, @Param("studentId") Long studentId, @Param("sessionDate") LocalDate sessionDate);
+
+    @Select("SELECT COUNT(*) FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId}")
+    long countByCourseIdAndStudentId(@Param("courseId") Long courseId, @Param("studentId") Long studentId);
+
+    @Select("SELECT COUNT(*) FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId} AND status = #{status}")
+    long countByCourseIdAndStudentIdAndStatus(@Param("courseId") Long courseId, @Param("studentId") Long studentId, @Param("status") String status);
 }

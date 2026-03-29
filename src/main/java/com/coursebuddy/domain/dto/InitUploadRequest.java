@@ -12,4 +12,6 @@ public class InitUploadRequest {
 
     @Positive(message = "文件大小必须大于0")
     private long fileSize;
+
+    private String category;
 }

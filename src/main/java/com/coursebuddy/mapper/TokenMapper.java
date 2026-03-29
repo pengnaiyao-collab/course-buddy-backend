@@ -1,23 +1,24 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.coursebuddy.domain.po.TokenPO;
-import com.coursebuddy.domain.vo.RefreshTokenResponseVO;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
 
-@Component
-public class TokenMapper {
+@Mapper
+public interface TokenMapper extends BaseMapper<TokenPO> {
 
-    public RefreshTokenResponseVO poToRefreshResponse(TokenPO po) {
-        if (po == null) return null;
-        long expiresIn = ChronoUnit.SECONDS.between(LocalDateTime.now(), po.getExpiresAt());
-        return RefreshTokenResponseVO.builder()
-                .accessToken(po.getAccessToken())
-                .refreshToken(po.getRefreshToken())
-                .expiresIn(Math.max(expiresIn, 0))
-                .tokenType("Bearer")
-                .build();
-    }
+    @Select("SELECT * FROM tokens WHERE refresh_token = #{refreshToken}")
+    Optional<TokenPO> findByRefreshToken(@Param("refreshToken") String refreshToken);
+
+    @Select("SELECT * FROM tokens WHERE user_id = #{userId}")
+    List<TokenPO> findByUserId(@Param("userId") Long userId);
+
+    @Delete("DELETE FROM tokens WHERE user_id = #{userId} AND is_revoked = true")
+    void deleteByUserIdAndIsRevokedTrue(@Param("userId") Long userId);
 }

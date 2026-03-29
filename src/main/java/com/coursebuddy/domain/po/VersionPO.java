@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,39 +12,17 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "versions")
+@TableName("versions")
 public class VersionPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "entity_type", nullable = false, length = 100)
     private String entityType;
-
-    @Column(name = "entity_id", nullable = false)
     private Long entityId;
-
-    @Column(name = "version_number", nullable = false)
     private Integer versionNumber;
-
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String content;
-
-    @Column(name = "created_by")
     private Long createdBy;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(length = 500)
     private String description;
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }

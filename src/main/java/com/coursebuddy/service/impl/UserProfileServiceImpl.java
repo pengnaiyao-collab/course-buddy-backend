@@ -1,17 +1,19 @@
 package com.coursebuddy.service.impl;
 
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.UserProfileDTO;
 import com.coursebuddy.domain.dto.UserSettingsDTO;
 import com.coursebuddy.domain.po.UserPO;
 import com.coursebuddy.domain.po.UserSettingsPO;
 import com.coursebuddy.domain.vo.UserProfileVO;
 import com.coursebuddy.domain.vo.UserSettingsVO;
-import com.coursebuddy.mapper.UserProfileMapper;
-import com.coursebuddy.repository.UserRepository;
-import com.coursebuddy.repository.UserSettingsRepository;
+import com.coursebuddy.converter.UserProfileConverter;
+import com.coursebuddy.mapper.UserMapper;
+import com.coursebuddy.mapper.UserSettingsMapper;
 import com.coursebuddy.service.IUserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,16 +25,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserProfileServiceImpl implements IUserProfileService {
 
-    private final UserRepository userRepository;
-    private final UserSettingsRepository userSettingsRepository;
-    private final UserProfileMapper userProfileMapper;
+    private final UserMapper userRepository;
+    private final UserSettingsMapper userSettingsRepository;
+    private final UserProfileConverter userProfileMapper;
 
     @Override
     @Transactional(readOnly = true)
     public UserProfileVO getMyProfile() {
         User currentUser = SecurityUtils.getCurrentUser();
-        UserPO po = userRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new BusinessException(404, "User not found"));
+        UserPO po = userRepository.selectById(currentUser.getId());
+        if (po == null) {
+            throw new BusinessException(404, "User not found");
+        }
         return userProfileMapper.poToVo(po);
     }
 
@@ -40,26 +44,33 @@ public class UserProfileServiceImpl implements IUserProfileService {
     @Transactional
     public UserProfileVO updateMyProfile(UserProfileDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        UserPO po = userRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new BusinessException(404, "User not found"));
+        UserPO po = userRepository.selectById(currentUser.getId());
+        if (po == null) {
+            throw new BusinessException(404, "User not found");
+        }
         if (dto.getRealName() != null) po.setRealName(dto.getRealName());
         if (dto.getPhone() != null) po.setPhone(dto.getPhone());
         if (dto.getBio() != null) po.setBio(dto.getBio());
-        return userProfileMapper.poToVo(userRepository.save(po));
+        userRepository.updateById(po);
+        return userProfileMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public UserProfileVO getProfileById(Long userId) {
-        UserPO po = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(404, "User not found"));
+        UserPO po = userRepository.selectById(userId);
+        if (po == null) {
+            throw new BusinessException(404, "User not found");
+        }
         return userProfileMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<UserProfileVO> searchUsers(String keyword, Pageable pageable) {
-        return userRepository.searchByKeyword(keyword, pageable).map(userProfileMapper::poToVo);
+        IPage<UserPO> poPage = userRepository.searchByKeyword(
+                MybatisPlusPageUtils.toMpPage(pageable), keyword);
+        return MybatisPlusPageUtils.toSpringPage(poPage, pageable).map(userProfileMapper::poToVo);
     }
 
     @Override
@@ -83,7 +94,12 @@ public class UserProfileServiceImpl implements IUserProfileService {
         if (dto.getLanguage() != null) settings.setLanguage(dto.getLanguage());
         if (dto.getTheme() != null) settings.setTheme(dto.getTheme());
         if (dto.getTimezone() != null) settings.setTimezone(dto.getTimezone());
-        return toSettingsVO(userSettingsRepository.save(settings));
+        if (settings.getId() == null) {
+            userSettingsRepository.insert(settings);
+        } else {
+            userSettingsRepository.updateById(settings);
+        }
+        return toSettingsVO(settings);
     }
 
     private UserSettingsVO toSettingsVO(UserSettingsPO po) {

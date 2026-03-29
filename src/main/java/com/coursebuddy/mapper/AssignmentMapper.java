@@ -1,51 +1,24 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.AssignmentDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.AssignmentPO;
-import com.coursebuddy.domain.vo.AssignmentVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public class AssignmentMapper {
+@Mapper
+public interface AssignmentMapper extends BaseMapper<AssignmentPO> {
 
-    public AssignmentPO dtoToPo(AssignmentDTO dto) {
-        if (dto == null) return null;
-        return AssignmentPO.builder()
-                .courseId(dto.getCourseId())
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .dueDate(dto.getDueDate())
-                .maxScore(dto.getMaxScore() != null ? dto.getMaxScore() : 100)
-                .attachmentUrl(dto.getAttachmentUrl())
-                .build();
-    }
+    @Select("SELECT * FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
+    IPage<AssignmentPO> findByCourseIdAndDeletedAtIsNull(Page<AssignmentPO> page, @Param("courseId") Long courseId);
 
-    public AssignmentVO poToVo(AssignmentPO po) {
-        if (po == null) return null;
-        return AssignmentVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .title(po.getTitle())
-                .description(po.getDescription())
-                .dueDate(po.getDueDate())
-                .maxScore(po.getMaxScore())
-                .attachmentUrl(po.getAttachmentUrl())
-                .isPublished(po.getIsPublished())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
+    List<AssignmentPO> findByCourseIdAndDeletedAtIsNull(@Param("courseId") Long courseId);
 
-    public List<AssignmentVO> poListToVoList(List<AssignmentPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<AssignmentVO> poPageToVoPage(Page<AssignmentPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT COUNT(*) FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
+    long countByCourseIdAndDeletedAtIsNull(@Param("courseId") Long courseId);
 }

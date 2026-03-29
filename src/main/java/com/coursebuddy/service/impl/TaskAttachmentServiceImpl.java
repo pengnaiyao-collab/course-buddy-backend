@@ -9,9 +9,9 @@ import com.coursebuddy.domain.vo.ChunkUploadResponse;
 import com.coursebuddy.domain.vo.FileUploadResponse;
 import com.coursebuddy.domain.vo.InitUploadResponse;
 import com.coursebuddy.domain.vo.TaskAttachmentVO;
+import com.coursebuddy.converter.TaskAttachmentConverter;
+import com.coursebuddy.mapper.CollaborationTaskMapper;
 import com.coursebuddy.mapper.TaskAttachmentMapper;
-import com.coursebuddy.repository.CollaborationTaskRepository;
-import com.coursebuddy.repository.TaskAttachmentRepository;
 import com.coursebuddy.service.ITaskAttachmentService;
 import com.coursebuddy.service.IMinIOUploadService;
 import lombok.RequiredArgsConstructor;
@@ -25,16 +25,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskAttachmentServiceImpl implements ITaskAttachmentService {
 
-    private final TaskAttachmentRepository attachmentRepository;
-    private final CollaborationTaskRepository taskRepository;
-    private final TaskAttachmentMapper attachmentMapper;
+    private final TaskAttachmentMapper attachmentRepository;
+    private final CollaborationTaskMapper taskRepository;
+    private final TaskAttachmentConverter attachmentMapper;
     private final IMinIOUploadService minIOUploadService;
 
     @Override
     @Transactional
     public TaskAttachmentVO uploadAttachment(Long taskId, MultipartFile file) {
         User currentUser = SecurityUtils.getCurrentUser();
-        if (!taskRepository.existsById(taskId)) {
+        if (taskRepository.selectById(taskId) == null) {
             throw new BusinessException(404, "Task not found");
         }
         // Use the chunked upload approach from IMinIOUploadService
@@ -54,25 +54,28 @@ public class TaskAttachmentServiceImpl implements ITaskAttachmentService {
                 .fileType(file.getContentType())
                 .uploadedBy(currentUser.getId())
                 .build();
-        return attachmentMapper.poToVo(attachmentRepository.save(po));
+        attachmentRepository.insert(po);
+        return attachmentMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public void deleteAttachment(Long attachmentId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        TaskAttachmentPO po = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new BusinessException(404, "Attachment not found"));
+        TaskAttachmentPO po = attachmentRepository.selectById(attachmentId);
+        if (po == null) {
+            throw new BusinessException(404, "Attachment not found");
+        }
         if (!po.getUploadedBy().equals(currentUser.getId())) {
             throw new BusinessException(403, "You can only delete your own attachments");
         }
-        attachmentRepository.delete(po);
+        attachmentRepository.deleteById(po.getId());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TaskAttachmentVO> getAttachments(Long taskId) {
-        if (!taskRepository.existsById(taskId)) {
+        if (taskRepository.selectById(taskId) == null) {
             throw new BusinessException(404, "Task not found");
         }
         return attachmentMapper.poListToVoList(attachmentRepository.findByTaskId(taskId));

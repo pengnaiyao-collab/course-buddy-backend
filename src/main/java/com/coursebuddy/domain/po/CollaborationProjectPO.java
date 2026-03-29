@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,54 +12,24 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "collaboration_projects")
+@TableName("collaboration_projects")
 public class CollaborationProjectPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "course_id")
     private Long courseId;
-
-    @Column(nullable = false, length = 256)
     private String name;
-
-    @Column(columnDefinition = "TEXT")
     private String description;
-
-    @Column(name = "owner_id", nullable = false)
     private Long ownerId;
-
-    @Column(length = 16)
     @Builder.Default
     private String status = "ACTIVE";
-
-    @Column(name = "cover_url", length = 512)
     private String coverUrl;
-
-    @Column(name = "is_public")
     @Builder.Default
     private Boolean isPublic = false;
-
-    @Column(name = "deleted_at")
+    @TableLogic
     private LocalDateTime deletedAt;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

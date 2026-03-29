@@ -9,7 +9,7 @@ import com.coursebuddy.domain.vo.ChunkUploadResponse;
 import com.coursebuddy.domain.vo.FileUploadResponse;
 import com.coursebuddy.domain.vo.InitUploadResponse;
 import com.coursebuddy.domain.vo.UploadProgressVO;
-import com.coursebuddy.repository.FileUploadRepository;
+import com.coursebuddy.mapper.FileUploadMapper;
 import com.coursebuddy.service.IMinIOUploadService;
 import com.coursebuddy.util.UploadSession;
 import com.coursebuddy.util.UploadSessionManager;
@@ -43,7 +43,7 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
     private final MinioClient minioClient;
     private final MinIOProperties properties;
     private final UploadSessionManager sessionManager;
-    private final FileUploadRepository fileUploadRepository;
+    private final FileUploadMapper fileUploadRepository;
 
     @Override
     public InitUploadResponse initUpload(InitUploadRequest request) {
@@ -58,7 +58,7 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
 
         String objectName = UploadSessionManager.generateObjectName(request.getFileName());
         String sessionId = sessionManager.createSession(
-                request.getFileName(), request.getFileSize(), totalChunks, objectName);
+                request.getFileName(), request.getFileSize(), request.getCategory(), totalChunks, objectName);
 
         return InitUploadResponse.builder()
                 .sessionId(sessionId)
@@ -151,11 +151,13 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
                     .fileName(session.getFileName())
                     .fileSize(stat.size())
                     .contentType(stat.contentType())
+                    .category(session.getCategory())
                     .uploadUrl(buildFileUrl(objectName))
                     .uploadedAt(LocalDateTime.now())
                     .build();
 
-            FileUploadPO saved = fileUploadRepository.save(fileUpload);
+            fileUploadRepository.insert(fileUpload);
+            FileUploadPO saved = fileUpload;
 
             sessionManager.removeSession(sessionId);
 
@@ -167,6 +169,7 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
                     .objectName(objectName)
                     .fileName(session.getFileName())
                     .fileSize(stat.size())
+                    .category(session.getCategory())
                     .uploadUrl(buildFileUrl(objectName))
                     .status("completed")
                     .build();
@@ -232,7 +235,7 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
         fileUploadRepository.findByObjectNameAndIsDeletedFalse(objectName)
                 .ifPresent(f -> {
                     f.setIsDeleted(true);
-                    fileUploadRepository.save(f);
+                    fileUploadRepository.updateById(f);
                 });
     }
 
@@ -252,7 +255,7 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
     }
 
     @Override
-    public BatchUploadResultVO batchUpload(MultipartFile[] files) {
+    public BatchUploadResultVO batchUpload(MultipartFile[] files, String category) {
         List<FileUploadResponse> successes = new ArrayList<>(files.length);
         List<String> failures = new ArrayList<>(files.length);
 
@@ -276,16 +279,19 @@ public class MinIOUploadServiceImpl implements IMinIOUploadService {
                         .fileName(originalName)
                         .fileSize(file.getSize())
                         .contentType(contentType)
+                        .category(category)
                         .uploadUrl(buildFileUrl(objectName))
                         .uploadedAt(LocalDateTime.now())
                         .build();
-                FileUploadPO saved = fileUploadRepository.save(fileUpload);
+                fileUploadRepository.insert(fileUpload);
+                FileUploadPO saved = fileUpload;
 
                 successes.add(FileUploadResponse.builder()
                         .uploadId(saved.getId().toString())
                         .objectName(objectName)
                         .fileName(originalName)
                         .fileSize(file.getSize())
+                        .category(category)
                         .uploadUrl(buildFileUrl(objectName))
                         .status("completed")
                         .build());

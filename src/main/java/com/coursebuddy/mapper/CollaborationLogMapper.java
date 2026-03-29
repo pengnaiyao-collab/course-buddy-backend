@@ -1,36 +1,21 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CollaborationLogPO;
-import com.coursebuddy.domain.vo.CollaborationLogVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public class CollaborationLogMapper {
+@Mapper
+public interface CollaborationLogMapper extends BaseMapper<CollaborationLogPO> {
 
-    public CollaborationLogVO poToVo(CollaborationLogPO po) {
-        if (po == null) return null;
-        return CollaborationLogVO.builder()
-                .id(po.getId())
-                .projectId(po.getProjectId())
-                .userId(po.getUserId())
-                .actionType(po.getActionType())
-                .entityType(po.getEntityType())
-                .entityId(po.getEntityId())
-                .changeData(po.getChangeData())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM collaboration_logs WHERE project_id = #{projectId}")
+    IPage<CollaborationLogPO> findByProjectId(Page<CollaborationLogPO> page, @Param("projectId") Long projectId);
 
-    public List<CollaborationLogVO> poListToVoList(List<CollaborationLogPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<CollaborationLogVO> poPageToVoPage(Page<CollaborationLogPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM collaboration_logs WHERE project_id = #{projectId} AND user_id = #{userId}")
+    List<CollaborationLogPO> findByProjectIdAndUserId(@Param("projectId") Long projectId, @Param("userId") Long userId);
 }

@@ -44,7 +44,7 @@ public class UserService implements UserDetailsService {
                 .role(role)
                 .build();
 
-        user = userRepository.save(user);
+        userRepository.insert(user);
         String token = jwtUtil.generateToken(user);
         return AuthResponse.of(token, user);
     }

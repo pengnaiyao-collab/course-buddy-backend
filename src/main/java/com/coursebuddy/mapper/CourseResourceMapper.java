@@ -1,51 +1,20 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.CourseResourceDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CourseResourcePO;
-import com.coursebuddy.domain.vo.CourseResourceVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface CourseResourceMapper extends BaseMapper<CourseResourcePO> {
 
-@Component
-public class CourseResourceMapper {
+    @Select("SELECT * FROM course_resources WHERE course_id = #{courseId}")
+    IPage<CourseResourcePO> findByCourseId(Page<CourseResourcePO> page, @Param("courseId") Long courseId);
 
-    public CourseResourcePO dtoToPo(CourseResourceDTO dto) {
-        if (dto == null) return null;
-        return CourseResourcePO.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .resourceType(dto.getResourceType() != null ? dto.getResourceType() : "OTHER")
-                .resourceUrl(dto.getResourceUrl())
-                .fileSize(dto.getFileSize())
-                .build();
-    }
-
-    public CourseResourceVO poToVo(CourseResourcePO po) {
-        if (po == null) return null;
-        return CourseResourceVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .title(po.getTitle())
-                .description(po.getDescription())
-                .resourceType(po.getResourceType())
-                .resourceUrl(po.getResourceUrl())
-                .fileSize(po.getFileSize())
-                .downloadCount(po.getDownloadCount())
-                .createdBy(po.getCreatedBy())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<CourseResourceVO> poListToVoList(List<CourseResourcePO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<CourseResourceVO> poPageToVoPage(Page<CourseResourcePO> page) {
-        return page.map(this::poToVo);
-    }
+    @Update("UPDATE course_resources SET download_count = download_count + 1 WHERE id = #{id}")
+    void incrementDownloadCount(@Param("id") Long id);
 }

@@ -1,54 +1,30 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.RegisterDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.UserPO;
-import com.coursebuddy.domain.vo.LoginResponseVO;
-import com.coursebuddy.domain.vo.UserVO;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-@Component
-@RequiredArgsConstructor
-public class UserMapper {
+import java.util.Optional;
 
-    private final PasswordEncoder passwordEncoder;
+@Mapper
+public interface UserMapper extends BaseMapper<UserPO> {
 
-    public UserPO registerDtoToPo(RegisterDTO dto) {
-        if (dto == null) return null;
-        return UserPO.builder()
-                .username(dto.getUsername())
-                .email(dto.getEmail())
-                .password(passwordEncoder.encode(dto.getPassword()))
-                .isActive(true)
-                .isLocked(false)
-                .build();
-    }
+    @Select("SELECT * FROM users WHERE username = #{username}")
+    Optional<UserPO> findByUsername(@Param("username") String username);
 
-    public UserVO poToVo(UserPO po) {
-        if (po == null) return null;
-        return UserVO.builder()
-                .id(po.getId())
-                .username(po.getUsername())
-                .email(po.getEmail())
-                .realName(po.getRealName())
-                .phone(po.getPhone())
-                .avatar(po.getAvatar())
-                .isActive(po.getIsActive())
-                .createdAt(po.getCreatedAt())
-                .lastLoginAt(po.getLastLoginAt())
-                .build();
-    }
+    @Select("SELECT * FROM users WHERE email = #{email}")
+    Optional<UserPO> findByEmail(@Param("email") String email);
 
-    public LoginResponseVO poAndTokenToLoginResponse(UserPO po, String accessToken,
-                                                      String refreshToken, Long expiresIn) {
-        if (po == null) return null;
-        return LoginResponseVO.builder()
-                .user(poToVo(po))
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(expiresIn)
-                .tokenType("Bearer")
-                .build();
-    }
+    @Select("SELECT COUNT(*) > 0 FROM users WHERE username = #{username}")
+    boolean existsByUsername(@Param("username") String username);
+
+    @Select("SELECT COUNT(*) > 0 FROM users WHERE email = #{email}")
+    boolean existsByEmail(@Param("email") String email);
+
+    @Select("SELECT * FROM users WHERE username LIKE CONCAT('%', #{keyword}, '%') OR email LIKE CONCAT('%', #{keyword}, '%') OR real_name LIKE CONCAT('%', #{keyword}, '%')")
+    IPage<UserPO> searchByKeyword(Page<UserPO> page, @Param("keyword") String keyword);
 }

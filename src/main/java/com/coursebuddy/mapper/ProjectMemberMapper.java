@@ -1,34 +1,35 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.ProjectMemberPO;
-import com.coursebuddy.domain.vo.ProjectMemberVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class ProjectMemberMapper {
+@Mapper
+public interface ProjectMemberMapper extends BaseMapper<ProjectMemberPO> {
 
-    public ProjectMemberVO poToVo(ProjectMemberPO po) {
-        if (po == null) return null;
-        return ProjectMemberVO.builder()
-                .id(po.getId())
-                .projectId(po.getProjectId())
-                .userId(po.getUserId())
-                .role(po.getRole())
-                .joinedAt(po.getJoinedAt())
-                .createdAt(po.getCreatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM project_members WHERE project_id = #{projectId}")
+    List<ProjectMemberPO> findByProjectId(@Param("projectId") Long projectId);
 
-    public List<ProjectMemberVO> poListToVoList(List<ProjectMemberPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM project_members WHERE project_id = #{projectId}")
+    IPage<ProjectMemberPO> findByProjectId(Page<ProjectMemberPO> page, @Param("projectId") Long projectId);
 
-    public Page<ProjectMemberVO> poPageToVoPage(Page<ProjectMemberPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}")
+    Optional<ProjectMemberPO> findByProjectIdAndUserId(@Param("projectId") Long projectId, @Param("userId") Long userId);
+
+    @Select("SELECT COUNT(*) > 0 FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}")
+    boolean existsByProjectIdAndUserId(@Param("projectId") Long projectId, @Param("userId") Long userId);
+
+    @Delete("DELETE FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}")
+    void deleteByProjectIdAndUserId(@Param("projectId") Long projectId, @Param("userId") Long userId);
+
+    @Select("SELECT COUNT(*) FROM project_members WHERE project_id = #{projectId}")
+    long countByProjectId(@Param("projectId") Long projectId);
 }

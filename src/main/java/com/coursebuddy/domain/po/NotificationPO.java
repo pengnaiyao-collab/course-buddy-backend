@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,45 +12,21 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "notifications")
+@TableName("notifications")
 public class NotificationPO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "user_id", nullable = false)
     private Long userId;
-
-    @Column(nullable = false, length = 256)
     private String title;
-
-    @Column(columnDefinition = "TEXT")
     private String content;
-
-    @Column(nullable = false, length = 32)
     @Builder.Default
     private String type = "SYSTEM";
-
-    @Column(name = "is_read", nullable = false)
     @Builder.Default
     private Boolean isRead = false;
-
-    @Column(name = "related_id")
     private Long relatedId;
-
-    @Column(name = "related_type", length = 32)
     private String relatedType;
-
-    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }

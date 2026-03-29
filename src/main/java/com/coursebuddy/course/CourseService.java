@@ -1,11 +1,11 @@
 package com.coursebuddy.course;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.auth.User;
 import com.coursebuddy.auth.AuthUserRepository;
 import com.coursebuddy.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,17 +17,22 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final AuthUserRepository userRepository;
 
-    public Page<CourseResponse> listPublished(String keyword, Pageable pageable) {
+    public IPage<CourseResponse> listPublished(String keyword, Page<Course> page) {
+        IPage<Course> coursePage;
         if (keyword != null && !keyword.isBlank()) {
-            return courseRepository.searchPublished(keyword, pageable).map(CourseResponse::from);
+            coursePage = courseRepository.searchPublished(page, keyword);
+        } else {
+            coursePage = courseRepository.findByStatus(page, CourseStatus.PUBLISHED.name());
         }
-        return courseRepository.findByStatus(CourseStatus.PUBLISHED, pageable).map(CourseResponse::from);
+        return coursePage.convert(this::toCourseResponse);
     }
 
     public CourseResponse getById(Long id) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
-        return CourseResponse.from(course);
+        Course course = courseRepository.selectById(id);
+        if (course == null) {
+            throw new BusinessException(404, "Course not found");
+        }
+        return toCourseResponse(course);
     }
 
     @Transactional
@@ -36,23 +41,26 @@ public class CourseService {
         Course course = Course.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .teacher(teacher)
+                .teacherId(teacher.getId())
                 .price(request.getPrice())
                 .category(request.getCategory())
                 .status(request.getStatus() != null ? request.getStatus() : CourseStatus.DRAFT)
                 .maxStudents(request.getMaxStudents())
                 .coverImageUrl(request.getCoverImageUrl())
                 .build();
-        return CourseResponse.from(courseRepository.save(course));
+        courseRepository.insert(course);
+        return toCourseResponse(course);
     }
 
     @Transactional
     public CourseResponse update(Long id, CourseRequest request) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
+        Course course = courseRepository.selectById(id);
+        if (course == null) {
+            throw new BusinessException(404, "Course not found");
+        }
 
         User currentUser = getCurrentUser();
-        if (course.getTeacher() == null || !course.getTeacher().getId().equals(currentUser.getId())) {
+        if (course.getTeacherId() == null || !course.getTeacherId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to update this course");
         }
 
@@ -64,25 +72,36 @@ public class CourseService {
         if (request.getMaxStudents() != null) course.setMaxStudents(request.getMaxStudents());
         if (request.getCoverImageUrl() != null) course.setCoverImageUrl(request.getCoverImageUrl());
 
-        return CourseResponse.from(courseRepository.save(course));
+        courseRepository.updateById(course);
+        return toCourseResponse(course);
     }
 
     @Transactional
     public void delete(Long id) {
-        Course course = courseRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Course not found"));
+        Course course = courseRepository.selectById(id);
+        if (course == null) {
+            throw new BusinessException(404, "Course not found");
+        }
 
         User currentUser = getCurrentUser();
-        if (course.getTeacher() == null || !course.getTeacher().getId().equals(currentUser.getId())) {
+        if (course.getTeacherId() == null || !course.getTeacherId().equals(currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to delete this course");
         }
 
-        courseRepository.delete(course);
+        courseRepository.deleteById(course.getId());
     }
 
     private User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(401, "User not found"));
+    }
+
+    private CourseResponse toCourseResponse(Course course) {
+        User teacher = null;
+        if (course.getTeacherId() != null) {
+            teacher = userRepository.selectById(course.getTeacherId());
+        }
+        return CourseResponse.from(course, teacher);
     }
 }

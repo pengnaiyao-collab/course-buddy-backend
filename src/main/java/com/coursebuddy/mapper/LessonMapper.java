@@ -1,55 +1,31 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.LessonDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.LessonPO;
-import com.coursebuddy.domain.vo.LessonVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
-@Component
-public class LessonMapper {
+@Mapper
+public interface LessonMapper extends BaseMapper<LessonPO> {
 
-    public LessonPO dtoToPo(LessonDTO dto) {
-        if (dto == null) return null;
-        return LessonPO.builder()
-                .courseId(dto.getCourseId())
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .content(dto.getContent())
-                .lessonOrder(dto.getLessonOrder() != null ? dto.getLessonOrder() : 1)
-                .duration(dto.getDuration() != null ? dto.getDuration() : 0)
-                .videoUrl(dto.getVideoUrl())
-                .resourceUrls(dto.getResourceUrls())
-                .build();
-    }
+    @Select("SELECT * FROM lessons WHERE course_id = #{courseId} AND deleted_at IS NULL ORDER BY lesson_order ASC")
+    IPage<LessonPO> findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(Page<LessonPO> page, @Param("courseId") Long courseId);
 
-    public LessonVO poToVo(LessonPO po) {
-        if (po == null) return null;
-        return LessonVO.builder()
-                .id(po.getId())
-                .courseId(po.getCourseId())
-                .title(po.getTitle())
-                .description(po.getDescription())
-                .content(po.getContent())
-                .lessonOrder(po.getLessonOrder())
-                .duration(po.getDuration())
-                .videoUrl(po.getVideoUrl())
-                .resourceUrls(po.getResourceUrls())
-                .isPublished(po.getIsPublished())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM lessons WHERE course_id = #{courseId} AND deleted_at IS NULL ORDER BY lesson_order ASC")
+    List<LessonPO> findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(@Param("courseId") Long courseId);
 
-    public List<LessonVO> poListToVoList(List<LessonPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT MAX(lesson_order) FROM lessons WHERE course_id = #{courseId}")
+    Optional<Integer> findMaxLessonOrderByCourseId(@Param("courseId") Long courseId);
 
-    public Page<LessonVO> poPageToVoPage(Page<LessonPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT COUNT(*) FROM lessons WHERE course_id = #{courseId} AND deleted_at IS NULL")
+    long countByCourseIdAndDeletedAtIsNull(@Param("courseId") Long courseId);
+
+    @Select("SELECT COUNT(*) FROM lessons WHERE course_id = #{courseId} AND is_published = true AND deleted_at IS NULL")
+    long countByCourseIdAndIsPublishedTrueAndDeletedAtIsNull(@Param("courseId") Long courseId);
 }

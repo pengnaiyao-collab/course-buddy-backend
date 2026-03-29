@@ -1,6 +1,9 @@
 package com.coursebuddy.service;
 
+import com.coursebuddy.domain.dto.CourseActionPermissionUpdateDTO;
 import com.coursebuddy.domain.dto.CoursePermissionDTO;
+import com.coursebuddy.domain.vo.CourseActionPermissionVO;
+import com.coursebuddy.domain.vo.CourseAdminVoteVO;
 import com.coursebuddy.domain.vo.CoursePermissionVO;
 
 import java.util.List;
@@ -38,4 +41,19 @@ public interface ICoursePermissionService {
 
     /** 获取当前用户在指定课程中的权限级别，无权限返回 null */
     String getPermissionLevel(Long courseId);
+
+    /** 获取课程细粒度动作权限矩阵 */
+    List<CourseActionPermissionVO> getActionPermissionMatrix(Long courseId);
+
+    /** 更新某一级别在某动作上的权限开关 */
+    CourseActionPermissionVO updateActionPermission(CourseActionPermissionUpdateDTO dto);
+
+    /** 检查当前用户是否拥有某动作权限 */
+    boolean hasActionPermission(Long courseId, String actionKey);
+
+    /** 对候选管理员投票（学生自治） */
+    CourseAdminVoteVO voteAdmin(Long courseId, Long candidateUserId);
+
+    /** 管理员轮值：将候选人提升为 L1，现有 L1 退为 L2 */
+    CourseAdminVoteVO rotateAdmin(Long courseId, Long newAdminUserId);
 }

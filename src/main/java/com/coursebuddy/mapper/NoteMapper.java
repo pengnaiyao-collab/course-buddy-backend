@@ -1,58 +1,30 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.NoteDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.NotePO;
-import com.coursebuddy.domain.vo.NoteVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public class NoteMapper {
+@Mapper
+public interface NoteMapper extends BaseMapper<NotePO> {
 
-    public NotePO dtoToPo(NoteDTO dto) {
-        if (dto == null) return null;
-        return NotePO.builder()
-                .courseId(dto.getCourseId())
-                .categoryId(dto.getCategoryId())
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .description(dto.getDescription())
-                .status(dto.getStatus() != null ? dto.getStatus() : "DRAFT")
-                .category(dto.getCategory())
-                .tags(dto.getTags())
-                .isPublic(dto.getIsPublic() != null ? dto.getIsPublic() : false)
-                .build();
-    }
+    @Select("SELECT * FROM notes WHERE user_id = #{userId} AND is_deleted = false")
+    IPage<NotePO> findByUserIdAndIsDeletedFalse(Page<NotePO> page, @Param("userId") Long userId);
 
-    public NoteVO poToVo(NotePO po) {
-        if (po == null) return null;
-        return NoteVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .courseId(po.getCourseId())
-                .categoryId(po.getCategoryId())
-                .title(po.getTitle())
-                .content(po.getContent())
-                .description(po.getDescription())
-                .status(po.getStatus())
-                .category(po.getCategory())
-                .tags(po.getTags())
-                .isPublic(po.getIsPublic())
-                .version(po.getOptLockVersion())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM notes WHERE user_id = #{userId} AND course_id = #{courseId} AND is_deleted = false")
+    IPage<NotePO> findByUserIdAndCourseIdAndIsDeletedFalse(Page<NotePO> page, @Param("userId") Long userId, @Param("courseId") Long courseId);
 
-    public List<NoteVO> poListToVoList(List<NotePO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM notes WHERE user_id = #{userId} AND category_id = #{categoryId} AND is_deleted = false")
+    IPage<NotePO> findByUserIdAndCategoryIdAndIsDeletedFalse(Page<NotePO> page, @Param("userId") Long userId, @Param("categoryId") Long categoryId);
 
-    public Page<NoteVO> poPageToVoPage(Page<NotePO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM notes WHERE user_id = #{userId} AND LOWER(title) LIKE LOWER(CONCAT('%', #{keyword}, '%')) AND is_deleted = false")
+    IPage<NotePO> findByUserIdAndTitleContainingIgnoreCaseAndIsDeletedFalse(Page<NotePO> page, @Param("userId") Long userId, @Param("keyword") String keyword);
+
+    @Select("<script>SELECT * FROM notes WHERE user_id = #{userId} AND id IN <foreach collection='ids' item='id' open='(' separator=',' close=')'>#{id}</foreach> AND is_deleted = false</script>")
+    IPage<NotePO> findByUserIdAndIdInAndIsDeletedFalse(Page<NotePO> page, @Param("userId") Long userId, @Param("ids") List<Long> ids);
 }

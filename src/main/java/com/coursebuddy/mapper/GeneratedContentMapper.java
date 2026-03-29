@@ -1,39 +1,20 @@
 package com.coursebuddy.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.GeneratedContentPO;
-import com.coursebuddy.domain.vo.GeneratedContentVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface GeneratedContentMapper extends BaseMapper<GeneratedContentPO> {
 
-@Component
-public class GeneratedContentMapper {
+    @Select("SELECT * FROM ai_generated_contents WHERE user_id = #{userId} ORDER BY created_at DESC")
+    IPage<GeneratedContentPO> findByUserIdOrderByCreatedAtDesc(Page<GeneratedContentPO> page, @Param("userId") Long userId);
 
-    public GeneratedContentVO poToVo(GeneratedContentPO po) {
-        if (po == null) return null;
-        return GeneratedContentVO.builder()
-                .id(po.getId())
-                .userId(po.getUserId())
-                .contentType(po.getContentType())
-                .subject(po.getSubject())
-                .prompt(po.getPrompt())
-                .content(po.getContent())
-                .courseId(po.getCourseId())
-                .status(po.getStatus())
-                .tokenCount(po.getTokenCount())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
-
-    public List<GeneratedContentVO> poListToVoList(List<GeneratedContentPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
-
-    public Page<GeneratedContentVO> poPageToVoPage(Page<GeneratedContentPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT * FROM ai_generated_contents WHERE user_id = #{userId} AND content_type = #{contentType} ORDER BY created_at DESC")
+    IPage<GeneratedContentPO> findByUserIdAndContentTypeOrderByCreatedAtDesc(
+            Page<GeneratedContentPO> page, @Param("userId") Long userId, @Param("contentType") String contentType);
 }

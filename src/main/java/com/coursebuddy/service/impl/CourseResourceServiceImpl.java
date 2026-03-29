@@ -2,13 +2,15 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.Role;
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.CourseResourceDTO;
 import com.coursebuddy.domain.po.CourseResourcePO;
 import com.coursebuddy.domain.vo.CourseResourceVO;
+import com.coursebuddy.converter.CourseResourceConverter;
 import com.coursebuddy.mapper.CourseResourceMapper;
-import com.coursebuddy.repository.CourseResourceRepository;
 import com.coursebuddy.service.ICourseResourceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CourseResourceServiceImpl implements ICourseResourceService {
 
-    private final CourseResourceRepository resourceRepository;
-    private final CourseResourceMapper resourceMapper;
+    private final CourseResourceMapper resourceRepository;
+    private final CourseResourceConverter resourceMapper;
 
     @Override
     @Transactional
@@ -33,7 +35,8 @@ public class CourseResourceServiceImpl implements ICourseResourceService {
         CourseResourcePO po = resourceMapper.dtoToPo(dto);
         po.setCourseId(courseId);
         po.setCreatedBy(currentUser.getId());
-        return resourceMapper.poToVo(resourceRepository.save(po));
+        resourceRepository.insert(po);
+        return resourceMapper.poToVo(po);
     }
 
     @Override
@@ -43,22 +46,28 @@ public class CourseResourceServiceImpl implements ICourseResourceService {
         if (currentUser.getRole() != Role.TEACHER && currentUser.getRole() != Role.ADMIN) {
             throw new BusinessException(403, "Only teachers and admins can delete resources");
         }
-        CourseResourcePO po = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new BusinessException(404, "Resource not found"));
-        resourceRepository.delete(po);
+        CourseResourcePO po = resourceRepository.selectById(resourceId);
+        if (po == null) {
+            throw new BusinessException(404, "Resource not found");
+        }
+        resourceRepository.deleteById(po.getId());
     }
 
     @Override
     @Transactional(readOnly = true)
     public CourseResourceVO getResource(Long resourceId) {
-        CourseResourcePO po = resourceRepository.findById(resourceId)
-                .orElseThrow(() -> new BusinessException(404, "Resource not found"));
+        CourseResourcePO po = resourceRepository.selectById(resourceId);
+        if (po == null) {
+            throw new BusinessException(404, "Resource not found");
+        }
         return resourceMapper.poToVo(po);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<CourseResourceVO> listResources(Long courseId, Pageable pageable) {
-        return resourceMapper.poPageToVoPage(resourceRepository.findByCourseId(courseId, pageable));
+        IPage<CourseResourcePO> poPage = resourceRepository.findByCourseId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return resourceMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 }

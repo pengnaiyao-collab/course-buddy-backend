@@ -1,54 +1,31 @@
 package com.coursebuddy.mapper;
 
-import com.coursebuddy.domain.dto.CollaborationTaskDTO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.coursebuddy.domain.po.CollaborationTaskPO;
-import com.coursebuddy.domain.vo.CollaborationTaskVO;
-import org.springframework.data.domain.Page;
-import org.springframework.stereotype.Component;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
-import java.util.List;
-import java.util.stream.Collectors;
+@Mapper
+public interface CollaborationTaskMapper extends BaseMapper<CollaborationTaskPO> {
 
-@Component
-public class CollaborationTaskMapper {
+    @Select("SELECT * FROM collaboration_tasks WHERE project_id = #{projectId}")
+    IPage<CollaborationTaskPO> findByProjectId(Page<CollaborationTaskPO> page, @Param("projectId") Long projectId);
 
-    public CollaborationTaskPO dtoToPo(CollaborationTaskDTO dto) {
-        if (dto == null) return null;
-        return CollaborationTaskPO.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .assigneeId(dto.getAssigneeId())
-                .status(dto.getStatus())
-                .priority(dto.getPriority())
-                .dueDate(dto.getDueDate())
-                .build();
-    }
+    @Select("SELECT * FROM collaboration_tasks WHERE project_id = #{projectId} AND status = #{status}")
+    IPage<CollaborationTaskPO> findByProjectIdAndStatus(Page<CollaborationTaskPO> page, @Param("projectId") Long projectId, @Param("status") String status);
 
-    public CollaborationTaskVO poToVo(CollaborationTaskPO po) {
-        if (po == null) return null;
-        return CollaborationTaskVO.builder()
-                .id(po.getId())
-                .projectId(po.getProjectId())
-                .title(po.getTitle())
-                .description(po.getDescription())
-                .assigneeId(po.getAssigneeId())
-                .creatorId(po.getCreatorId())
-                .status(po.getStatus())
-                .priority(po.getPriority())
-                .dueDate(po.getDueDate())
-                .completedAt(po.getCompletedAt())
-                .progress(po.getProgress())
-                .createdAt(po.getCreatedAt())
-                .updatedAt(po.getUpdatedAt())
-                .build();
-    }
+    @Select("SELECT * FROM collaboration_tasks WHERE assignee_id = #{assigneeId}")
+    IPage<CollaborationTaskPO> findByAssigneeId(Page<CollaborationTaskPO> page, @Param("assigneeId") Long assigneeId);
 
-    public List<CollaborationTaskVO> poListToVoList(List<CollaborationTaskPO> list) {
-        if (list == null) return null;
-        return list.stream().map(this::poToVo).collect(Collectors.toList());
-    }
+    @Select("SELECT * FROM collaboration_tasks WHERE assignee_id = #{assigneeId} AND status = #{status}")
+    IPage<CollaborationTaskPO> findByAssigneeIdAndStatus(Page<CollaborationTaskPO> page, @Param("assigneeId") Long assigneeId, @Param("status") String status);
 
-    public Page<CollaborationTaskVO> poPageToVoPage(Page<CollaborationTaskPO> page) {
-        return page.map(this::poToVo);
-    }
+    @Select("SELECT COUNT(*) FROM collaboration_tasks WHERE project_id = #{projectId} AND status = #{status}")
+    long countByProjectIdAndStatus(@Param("projectId") Long projectId, @Param("status") String status);
+
+    @Select("SELECT COUNT(*) FROM collaboration_tasks WHERE project_id = #{projectId}")
+    long countByProjectId(@Param("projectId") Long projectId);
 }

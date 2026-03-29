@@ -5,7 +5,7 @@ import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.VersionPO;
 import com.coursebuddy.domain.vo.VersionDiffVO;
-import com.coursebuddy.repository.VersionRepository;
+import com.coursebuddy.mapper.VersionMapper;
 import com.coursebuddy.service.IVersionService;
 import com.github.difflib.DiffUtils;
 import com.github.difflib.UnifiedDiffUtils;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VersionServiceImpl implements IVersionService {
 
-    private final VersionRepository versionRepository;
+    private final VersionMapper versionRepository;
 
     @Override
     @Transactional
@@ -47,7 +47,8 @@ public class VersionServiceImpl implements IVersionService {
                 .description(description)
                 .build();
 
-        VersionPO saved = versionRepository.save(version);
+        versionRepository.insert(version);
+        VersionPO saved = version;
         log.info("Saved version {} for {}/{}", nextVersion, entityType, entityId);
         return saved;
     }

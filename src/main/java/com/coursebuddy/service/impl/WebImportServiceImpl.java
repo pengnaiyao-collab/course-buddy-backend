@@ -1,14 +1,16 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.KnowledgeItemDTO;
 import com.coursebuddy.domain.dto.WebImportDTO;
 import com.coursebuddy.domain.po.WebImportPO;
 import com.coursebuddy.domain.vo.KnowledgeItemVO;
 import com.coursebuddy.domain.vo.WebImportVO;
-import com.coursebuddy.repository.WebImportRepository;
+import com.coursebuddy.mapper.WebImportMapper;
 import com.coursebuddy.service.IKnowledgeBaseService;
 import com.coursebuddy.service.IWebImportService;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,7 @@ import java.net.URISyntaxException;
 @RequiredArgsConstructor
 public class WebImportServiceImpl implements IWebImportService {
 
-    private final WebImportRepository webImportRepository;
+    private final WebImportMapper webImportRepository;
     private final IKnowledgeBaseService knowledgeBaseService;
 
     private static final int CONNECT_TIMEOUT_MS = 10_000;
@@ -54,7 +56,7 @@ public class WebImportServiceImpl implements IWebImportService {
                 .status("PENDING")
                 .createdBy(userId)
                 .build();
-        po = webImportRepository.save(po);
+        webImportRepository.insert(po);
 
         try {
             Document doc = Jsoup.connect(dto.getUrl())
@@ -101,28 +103,33 @@ public class WebImportServiceImpl implements IWebImportService {
             po.setErrorMessage(e.getMessage());
         }
 
-        WebImportPO saved = webImportRepository.save(po);
+        webImportRepository.updateById(po);
+        WebImportPO saved = po;
         return toVO(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<WebImportVO> listByCourse(Long courseId, Pageable pageable) {
-        return webImportRepository.findByCourseId(courseId, pageable).map(this::toVO);
+        IPage<WebImportPO> poPage = webImportRepository.findByCourseId(
+                MybatisPlusPageUtils.toMpPage(pageable), courseId);
+        return MybatisPlusPageUtils.toSpringPage(poPage, pageable).map(this::toVO);
     }
 
     @Override
     @Transactional(readOnly = true)
     public WebImportVO getById(Long id) {
-        WebImportPO po = webImportRepository.findById(id)
-                .orElseThrow(() -> new BusinessException(404, "Web import record not found"));
+        WebImportPO po = webImportRepository.selectById(id);
+        if (po == null) {
+            throw new BusinessException(404, "Web import record not found");
+        }
         return toVO(po);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (!webImportRepository.existsById(id)) {
+        if (webImportRepository.selectById(id) == null) {
             throw new BusinessException(404, "Web import record not found");
         }
         webImportRepository.deleteById(id);

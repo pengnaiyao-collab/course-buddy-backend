@@ -1,13 +1,15 @@
 package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.NoteShareDTO;
 import com.coursebuddy.domain.po.NoteSharePO;
 import com.coursebuddy.domain.vo.NoteShareVO;
+import com.coursebuddy.converter.NoteShareConverter;
 import com.coursebuddy.mapper.NoteShareMapper;
-import com.coursebuddy.repository.NoteShareRepository;
 import com.coursebuddy.service.INoteShareService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,8 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NoteShareServiceImpl implements INoteShareService {
 
-    private final NoteShareRepository noteShareRepository;
-    private final NoteShareMapper noteShareMapper;
+    private final NoteShareMapper noteShareRepository;
+    private final NoteShareConverter noteShareMapper;
 
     @Override
     @Transactional
@@ -36,7 +38,8 @@ public class NoteShareServiceImpl implements INoteShareService {
                 .permission(dto.getPermission() != null ? dto.getPermission() : "READ")
                 .expiresAt(dto.getExpiresAt())
                 .build();
-        return noteShareMapper.poToVo(noteShareRepository.save(po));
+        noteShareRepository.insert(po);
+        return noteShareMapper.poToVo(po);
     }
 
     @Override
@@ -44,11 +47,15 @@ public class NoteShareServiceImpl implements INoteShareService {
     public Page<NoteShareVO> listMyShares(Long noteId, Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
         if (noteId != null) {
+            IPage<NoteSharePO> poPage = noteShareRepository.findByNoteIdAndOwnerIdOrderByCreatedAtDesc(
+                    MybatisPlusPageUtils.toMpPage(pageable), noteId, currentUser.getId());
             return noteShareMapper.poPageToVoPage(
-                    noteShareRepository.findByNoteIdAndOwnerIdOrderByCreatedAtDesc(noteId, currentUser.getId(), pageable));
+                    MybatisPlusPageUtils.toSpringPage(poPage, pageable));
         }
+        IPage<NoteSharePO> poPage = noteShareRepository.findByOwnerIdOrderByCreatedAtDesc(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
         return noteShareMapper.poPageToVoPage(
-                noteShareRepository.findByOwnerIdOrderByCreatedAtDesc(currentUser.getId(), pageable));
+                MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
@@ -71,25 +78,30 @@ public class NoteShareServiceImpl implements INoteShareService {
     @Transactional
     public NoteShareVO updateShare(Long shareId, NoteShareDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NoteSharePO po = noteShareRepository.findById(shareId)
-                .orElseThrow(() -> new BusinessException(404, "Share not found"));
+        NoteSharePO po = noteShareRepository.selectById(shareId);
+        if (po == null) {
+            throw new BusinessException(404, "Share not found");
+        }
         if (!po.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Access denied");
         }
         if (dto.getPermission() != null) po.setPermission(dto.getPermission());
         if (dto.getExpiresAt() != null) po.setExpiresAt(dto.getExpiresAt());
-        return noteShareMapper.poToVo(noteShareRepository.save(po));
+        noteShareRepository.updateById(po);
+        return noteShareMapper.poToVo(po);
     }
 
     @Override
     @Transactional
     public void deleteShare(Long shareId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        NoteSharePO po = noteShareRepository.findById(shareId)
-                .orElseThrow(() -> new BusinessException(404, "Share not found"));
+        NoteSharePO po = noteShareRepository.selectById(shareId);
+        if (po == null) {
+            throw new BusinessException(404, "Share not found");
+        }
         if (!po.getOwnerId().equals(currentUser.getId())) {
             throw new BusinessException(403, "Access denied");
         }
-        noteShareRepository.delete(po);
+        noteShareRepository.deleteById(po.getId());
     }
 }

@@ -2,9 +2,11 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
 import com.coursebuddy.client.XunFeiSparkClient;
+import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.config.XunFeiProperties;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.coursebuddy.domain.dto.ChatRequestDTO;
 import com.coursebuddy.domain.po.AiUsageStatsPO;
 import com.coursebuddy.domain.po.ConversationMessagePO;
@@ -13,10 +15,10 @@ import com.coursebuddy.domain.vo.AiUsageStatsVO;
 import com.coursebuddy.domain.vo.ChatMessageVO;
 import com.coursebuddy.domain.vo.ChatResponseVO;
 import com.coursebuddy.domain.vo.ConversationVO;
+import com.coursebuddy.converter.ConversationConverter;
+import com.coursebuddy.mapper.AiUsageStatsMapper;
+import com.coursebuddy.mapper.ConversationMessageMapper;
 import com.coursebuddy.mapper.ConversationMapper;
-import com.coursebuddy.repository.AiUsageStatsRepository;
-import com.coursebuddy.repository.ConversationMessageRepository;
-import com.coursebuddy.repository.ConversationRepository;
 import com.coursebuddy.service.IXunFeiAiService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -42,10 +44,10 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
 
     private final XunFeiSparkClient sparkClient;
     private final XunFeiProperties properties;
-    private final ConversationRepository conversationRepository;
-    private final ConversationMessageRepository messageRepository;
-    private final AiUsageStatsRepository usageStatsRepository;
-    private final ConversationMapper conversationMapper;
+    private final ConversationMapper conversationRepository;
+    private final ConversationMessageMapper messageRepository;
+    private final AiUsageStatsMapper usageStatsRepository;
+    private final ConversationConverter conversationMapper;
 
     private static final int MAX_CONTEXT_MESSAGES = 20;
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
@@ -95,7 +97,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                     ? dto.getMessage().substring(0, 30) + "..."
                     : dto.getMessage();
             conversation.setTitle(title);
-            conversationRepository.save(conversation);
+            conversationRepository.updateById(conversation);
         }
 
         recordUsageStats(currentUser.getId(), requestType, result.promptTokens(), result.completionTokens(),
@@ -147,7 +149,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                                         String msg = dto.getMessage();
                                         String title = msg.length() > 30 ? msg.substring(0, 30) + "..." : msg;
                                         conversation.setTitle(title);
-                                        conversationRepository.save(conversation);
+                                        conversationRepository.updateById(conversation);
                                     }
                                     recordUsageStats(currentUser.getId(), "CHAT_STREAM", promptTokens,
                                             completionTokens, System.currentTimeMillis() - startTime, "SUCCESS", null);
@@ -180,16 +182,19 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
     @Transactional(readOnly = true)
     public Page<ConversationVO> listConversations(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return conversationMapper.poPageToVoPage(
-                conversationRepository.findByUserIdOrderByUpdatedAtDesc(currentUser.getId(), pageable));
+        IPage<ConversationPO> poPage = conversationRepository.findByUserIdOrderByUpdatedAtDesc(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return conversationMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ChatMessageVO> getConversationMessages(Long conversationId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        ConversationPO conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new BusinessException(404, "对话不存在"));
+        ConversationPO conversation = conversationRepository.selectById(conversationId);
+        if (conversation == null) {
+            throw new BusinessException(404, "对话不存在");
+        }
         if (!conversation.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "无权访问该对话");
         }
@@ -201,33 +206,40 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
     @Transactional
     public ConversationVO archiveConversation(Long conversationId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        ConversationPO conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new BusinessException(404, "对话不存在"));
+        ConversationPO conversation = conversationRepository.selectById(conversationId);
+        if (conversation == null) {
+            throw new BusinessException(404, "对话不存在");
+        }
         if (!conversation.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "无权操作该对话");
         }
         conversation.setStatus("ARCHIVED");
-        return conversationMapper.poToVo(conversationRepository.save(conversation));
+        conversationRepository.updateById(conversation);
+        return conversationMapper.poToVo(conversation);
     }
 
     @Override
     @Transactional
     public void deleteConversation(Long conversationId) {
         User currentUser = SecurityUtils.getCurrentUser();
-        ConversationPO conversation = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new BusinessException(404, "对话不存在"));
+        ConversationPO conversation = conversationRepository.selectById(conversationId);
+        if (conversation == null) {
+            throw new BusinessException(404, "对话不存在");
+        }
         if (!conversation.getUserId().equals(currentUser.getId())) {
             throw new BusinessException(403, "无权删除该对话");
         }
         messageRepository.deleteByConversationId(conversationId);
-        conversationRepository.delete(conversation);
+        conversationRepository.deleteById(conversation.getId());
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AiUsageStatsVO> getUsageStats(Pageable pageable) {
         User currentUser = SecurityUtils.getCurrentUser();
-        return usageStatsRepository.findByUserIdOrderByCreatedAtDesc(currentUser.getId(), pageable)
+        IPage<AiUsageStatsPO> poPage = usageStatsRepository.findByUserIdOrderByCreatedAtDesc(
+                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
+        return MybatisPlusPageUtils.toSpringPage(poPage, pageable)
                 .map(po -> AiUsageStatsVO.builder()
                         .id(po.getId())
                         .userId(po.getUserId())
@@ -246,8 +258,10 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
 
     private ConversationPO resolveConversation(ChatRequestDTO dto, Long userId) {
         if (dto.getConversationId() != null) {
-            ConversationPO existing = conversationRepository.findById(dto.getConversationId())
-                    .orElseThrow(() -> new BusinessException(404, "对话不存在"));
+            ConversationPO existing = conversationRepository.selectById(dto.getConversationId());
+            if (existing == null) {
+                throw new BusinessException(404, "对话不存在");
+            }
             if (!existing.getUserId().equals(userId)) {
                 throw new BusinessException(403, "无权访问该对话");
             }
@@ -259,7 +273,8 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                 .model(properties.getModel())
                 .status("ACTIVE")
                 .build();
-        return conversationRepository.save(newConv);
+        conversationRepository.insert(newConv);
+        return newConv;
     }
 
     private List<Map<String, String>> buildMessageContext(Long conversationId, String newUserMessage) {
@@ -290,7 +305,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                 .content(content)
                 .tokenCount(tokenCount)
                 .build();
-        messageRepository.save(msg);
+        messageRepository.insert(msg);
     }
 
     private void recordUsageStats(Long userId, String requestType,
@@ -311,7 +326,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                     .status(status)
                     .errorMessage(errorMessage)
                     .build();
-            usageStatsRepository.save(stats);
+            usageStatsRepository.insert(stats);
         } catch (Exception e) {
             log.warn("Failed to record AI usage stats", e);
         }

@@ -1,18 +1,24 @@
 package com.coursebuddy.auth;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.Optional;
 
-@Repository
-public interface AuthUserRepository extends JpaRepository<User, Long> {
+@Mapper
+public interface AuthUserRepository extends BaseMapper<User> {
 
-    Optional<User> findByUsername(String username);
+    @Select("SELECT * FROM users WHERE username = #{username}")
+    Optional<User> findByUsername(@Param("username") String username);
 
-    Optional<User> findByEmail(String email);
+    @Select("SELECT * FROM users WHERE email = #{email}")
+    Optional<User> findByEmail(@Param("email") String email);
 
-    boolean existsByUsername(String username);
+    @Select("SELECT COUNT(*) > 0 FROM users WHERE username = #{username}")
+    boolean existsByUsername(@Param("username") String username);
 
-    boolean existsByEmail(String email);
+    @Select("SELECT COUNT(*) > 0 FROM users WHERE email = #{email}")
+    boolean existsByEmail(@Param("email") String email);
 }

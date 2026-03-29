@@ -6,8 +6,8 @@ import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.dto.NoteTagDTO;
 import com.coursebuddy.domain.po.NoteTagPO;
 import com.coursebuddy.domain.vo.NoteTagVO;
+import com.coursebuddy.converter.NoteTagConverter;
 import com.coursebuddy.mapper.NoteTagMapper;
-import com.coursebuddy.repository.NoteTagRepository;
 import com.coursebuddy.service.INoteTagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NoteTagServiceImpl implements INoteTagService {
 
-    private final NoteTagRepository noteTagRepository;
-    private final NoteTagMapper noteTagMapper;
+    private final NoteTagMapper noteTagRepository;
+    private final NoteTagConverter noteTagMapper;
 
     @Override
     @Transactional
@@ -31,7 +31,8 @@ public class NoteTagServiceImpl implements INoteTagService {
         }
         NoteTagPO po = noteTagMapper.dtoToPo(dto);
         po.setUserId(currentUser.getId());
-        return noteTagMapper.poToVo(noteTagRepository.save(po));
+        noteTagRepository.insert(po);
+        return noteTagMapper.poToVo(po);
     }
 
     @Override
@@ -54,7 +55,8 @@ public class NoteTagServiceImpl implements INoteTagService {
                 .orElseThrow(() -> new BusinessException(404, "Tag not found"));
         if (dto.getName() != null) po.setName(dto.getName());
         if (dto.getColor() != null) po.setColor(dto.getColor());
-        return noteTagMapper.poToVo(noteTagRepository.save(po));
+        noteTagRepository.updateById(po);
+        return noteTagMapper.poToVo(po);
     }
 
     @Override
@@ -63,6 +65,6 @@ public class NoteTagServiceImpl implements INoteTagService {
         User currentUser = SecurityUtils.getCurrentUser();
         NoteTagPO po = noteTagRepository.findByIdAndUserId(id, currentUser.getId())
                 .orElseThrow(() -> new BusinessException(404, "Tag not found"));
-        noteTagRepository.delete(po);
+        noteTagRepository.deleteById(po.getId());
     }
 }

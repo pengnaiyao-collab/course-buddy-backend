@@ -1,6 +1,6 @@
 package com.coursebuddy.domain.po;
 
-import jakarta.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -8,55 +8,23 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "assignment_submissions")
+@TableName("assignment_submissions")
 public class AssignmentSubmissionPO {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
-
-    @Column(name = "assignment_id", nullable = false)
     private Long assignmentId;
-
-    @Column(name = "student_id", nullable = false)
     private Long studentId;
-
-    @Column(name = "submission_url", columnDefinition = "TEXT")
     private String submissionUrl;
-
-    @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
     private Integer score;
-
-    @Column(columnDefinition = "TEXT")
     private String feedback;
-
-    @Column(name = "graded_at")
     private LocalDateTime gradedAt;
-
-    @Column(name = "graded_by")
     private Long gradedBy;
-
-    @Column(length = 16)
     @Builder.Default
     private String status = "SUBMITTED";
-
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (submittedAt == null) submittedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }
