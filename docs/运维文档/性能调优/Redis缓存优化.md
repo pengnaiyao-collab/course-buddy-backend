@@ -185,15 +185,20 @@ public void updateCourseInfo(Long courseId, UpdateCourseRequest request) {
     String cacheKey = "cb:course:detail:" + courseId;
     redisTemplate.delete(cacheKey);
 
-    // 3. 同时清除可能的列表缓存
-    Set<String> listKeys = redisTemplate.keys("cb:course:list:*");
-    if (listKeys != null && !listKeys.isEmpty()) {
-        redisTemplate.delete(listKeys);
+    // 3. 同时清除可能的列表缓存（使用 SCAN 避免阻塞 Redis）
+    try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory()
+            .getConnection()
+            .scan(ScanOptions.scanOptions().match("cb:course:list:*").count(100).build())) {
+        List<String> keysToDelete = new ArrayList<>();
+        cursor.forEachRemaining(k -> keysToDelete.add(new String(k, StandardCharsets.UTF_8)));
+        if (!keysToDelete.isEmpty()) {
+            redisTemplate.delete(keysToDelete);
+        }
     }
 }
 ```
 
-> **注意**：`keys("cb:course:list:*")` 在生产大规模 Key 时会阻塞 Redis，应改用 `SCAN` 命令或标签方式管理。
+> **注意**：生产环境禁止使用 `KEYS` 命令扫描匹配的 Key，因为它会阻塞 Redis。应始终使用 `SCAN` 命令（非阻塞，分批返回）或通过 Set 数据结构维护 Key 标签集合来批量删除缓存。
 
 ---
 
