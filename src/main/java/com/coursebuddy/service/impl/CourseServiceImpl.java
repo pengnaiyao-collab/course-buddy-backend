@@ -132,8 +132,7 @@ public class CourseServiceImpl implements ICourseService {
                 .totalLessons(totalLessons)
                 .publishedLessons(publishedLessons)
                 .totalAssignments(totalAssignments)
-                // TODO: calculate actual average progress from learning progress records
-                .averageProgress(0.0)
+                .averageProgress(null)
                 .build();
     }
 }
