@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface AuditLogMapper extends BaseMapper<AuditLogPO> {
 
@@ -16,4 +18,14 @@ public interface AuditLogMapper extends BaseMapper<AuditLogPO> {
 
     @Select("SELECT * FROM audit_logs WHERE operator_id = #{operatorId}")
     IPage<AuditLogPO> findByOperatorId(Page<AuditLogPO> page, @Param("operatorId") Long operatorId);
+
+    @Select("<script>" +
+            "SELECT * FROM audit_logs WHERE entity_id = #{entityId} " +
+            "AND entity_type IN " +
+            "<foreach collection='entityTypes' item='type' open='(' separator=',' close=')'>#{type}</foreach> " +
+            "ORDER BY created_at DESC" +
+            "</script>")
+    IPage<AuditLogPO> findByEntityTypesAndEntityId(Page<AuditLogPO> page,
+                                                   @Param("entityTypes") List<String> entityTypes,
+                                                   @Param("entityId") Long entityId);
 }

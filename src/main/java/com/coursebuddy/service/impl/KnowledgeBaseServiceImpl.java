@@ -5,21 +5,26 @@ import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
+import com.coursebuddy.domain.po.AuditLogPO;
 import com.coursebuddy.domain.dto.KnowledgeAnalyzeDTO;
 import com.coursebuddy.domain.dto.KnowledgeItemDTO;
 import com.coursebuddy.domain.dto.KnowledgeResourceDTO;
 import com.coursebuddy.domain.po.KnowledgeAssociationPO;
 import com.coursebuddy.domain.po.KnowledgeItemPO;
 import com.coursebuddy.domain.po.KnowledgeResourcePO;
+import com.coursebuddy.domain.po.VersionPO;
 import com.coursebuddy.domain.vo.KnowledgeAnalyzeResultVO;
 import com.coursebuddy.domain.vo.KnowledgeGraphVO;
 import com.coursebuddy.domain.vo.KnowledgeItemVO;
 import com.coursebuddy.domain.vo.KnowledgeResourceVO;
 import com.coursebuddy.converter.KnowledgeItemConverter;
+import com.coursebuddy.mapper.AuditLogMapper;
 import com.coursebuddy.mapper.KnowledgeAssociationMapper;
 import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.mapper.KnowledgeResourceMapper;
 import com.coursebuddy.service.IKnowledgeBaseService;
+import com.coursebuddy.service.IVersionService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -46,6 +51,9 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
     private final KnowledgeItemConverter mapper;
     private final KnowledgeAssociationMapper associationRepository;
     private final KnowledgeResourceMapper knowledgeResourceRepository;
+    private final IVersionService versionService;
+    private final AuditLogMapper auditLogRepository;
+    private final ObjectMapper objectMapper;
 
     private static final Pattern SPLIT_PATTERN = Pattern.compile("(?<=[。！？.!?])\\s+|\\n{2,}");
 
@@ -56,6 +64,8 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
         KnowledgeItemPO po = mapper.dtoToPo(dto);
         po.setCreatedBy(currentUser.getId());
         repository.insert(po);
+        saveSnapshotVersion(po, "CREATE");
+        writeAudit("KNOWLEDGE_ITEM", po.getId(), "CREATE", null, snapshotJson(po));
         return mapper.poToVo(po);
     }
 
@@ -67,6 +77,8 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
         po.setCourseId(courseId);
         po.setCreatedBy(currentUser.getId());
         repository.insert(po);
+        saveSnapshotVersion(po, "CREATE");
+        writeAudit("KNOWLEDGE_ITEM", po.getId(), "CREATE", null, snapshotJson(po));
         return mapper.poToVo(po);
     }
 
@@ -95,6 +107,7 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
         if (existing == null) {
             throw new BusinessException(404, "Knowledge item not found");
         }
+        String oldValue = snapshotJson(existing);
         existing.setTitle(dto.getTitle());
         existing.setDescription(dto.getDescription());
         existing.setContent(dto.getContent());
@@ -109,16 +122,22 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
             existing.setStatus(dto.getStatus());
         }
         repository.updateById(existing);
+        saveSnapshotVersion(existing, "UPDATE");
+        writeAudit("KNOWLEDGE_ITEM", existing.getId(), "UPDATE", oldValue, snapshotJson(existing));
         return mapper.poToVo(existing);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
-        if (repository.selectById(id) == null) {
+        KnowledgeItemPO existing = repository.selectById(id);
+        if (existing == null) {
             throw new BusinessException(404, "Knowledge item not found");
         }
+        String oldValue = snapshotJson(existing);
+        saveSnapshotVersion(existing, "DELETE_SNAPSHOT");
         repository.deleteById(id);
+        writeAudit("KNOWLEDGE_ITEM", id, "DELETE", oldValue, null);
     }
 
     @Override
@@ -178,6 +197,8 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                     .createdBy(currentUser.getId())
                     .build();
             repository.insert(part);
+            saveSnapshotVersion(part, "AUTO_ANALYZE_SPLIT");
+            writeAudit("KNOWLEDGE_ITEM", part.getId(), "AUTO_ANALYZE_CREATE", null, snapshotJson(part));
             created.add(part);
             splitCount++;
         }
@@ -195,6 +216,10 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
 
         List<KnowledgeItemPO> summaryItems = List.of(coreSummary, difficultSummary, examSummary);
         created.addAll(summaryItems);
+        for (KnowledgeItemPO summary : summaryItems) {
+            saveSnapshotVersion(summary, "AUTO_ANALYZE_SUMMARY");
+            writeAudit("KNOWLEDGE_ITEM", summary.getId(), "AUTO_ANALYZE_CREATE", null, snapshotJson(summary));
+        }
 
         // Link summaries with parsed chunks to form a lightweight graph.
         for (KnowledgeItemPO summary : summaryItems) {
@@ -327,6 +352,7 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                 .createdBy(currentUser.getId())
                 .build();
         knowledgeResourceRepository.insert(po);
+        writeAudit("KNOWLEDGE_ITEM_RESOURCE", itemId, "RESOURCE_ATTACH", null, resourceJson(po));
         return toResourceVO(po);
     }
 
@@ -362,7 +388,139 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
         if (!po.getKnowledgeItemId().equals(itemId)) {
             throw new BusinessException(400, "Resource does not belong to target knowledge item");
         }
+        String oldValue = resourceJson(po);
         knowledgeResourceRepository.deleteById(po.getId());
+        writeAudit("KNOWLEDGE_ITEM_RESOURCE", itemId, "RESOURCE_DELETE", oldValue, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VersionPO> listVersions(Long courseId, Long itemId) {
+        KnowledgeItemPO item = repository.selectById(itemId);
+        if (item == null) {
+            throw new BusinessException(404, "Knowledge item not found");
+        }
+        if (!item.getCourseId().equals(courseId)) {
+            throw new BusinessException(403, "Knowledge item does not belong to this course");
+        }
+        return versionService.listVersions("KNOWLEDGE_ITEM", itemId);
+    }
+
+    @Override
+    @Transactional
+    public KnowledgeItemVO rollbackToVersion(Long courseId, Long itemId, Integer versionNumber) {
+        KnowledgeItemPO item = repository.selectById(itemId);
+        if (item == null) {
+            throw new BusinessException(404, "Knowledge item not found");
+        }
+        if (!item.getCourseId().equals(courseId)) {
+            throw new BusinessException(403, "Knowledge item does not belong to this course");
+        }
+        VersionPO target = versionService.getVersion("KNOWLEDGE_ITEM", itemId, versionNumber);
+        String oldValue = snapshotJson(item);
+        applySnapshot(item, target.getContent());
+        repository.updateById(item);
+        saveSnapshotVersion(item, "ROLLBACK_TO_V" + versionNumber);
+        writeAudit("KNOWLEDGE_ITEM", itemId, "ROLLBACK", oldValue, snapshotJson(item));
+        return mapper.poToVo(item);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AuditLogPO> listAuditLogs(Long courseId, Long itemId, Pageable pageable) {
+        KnowledgeItemPO item = repository.selectById(itemId);
+        if (item == null) {
+            throw new BusinessException(404, "Knowledge item not found");
+        }
+        if (!item.getCourseId().equals(courseId)) {
+            throw new BusinessException(403, "Knowledge item does not belong to this course");
+        }
+        IPage<AuditLogPO> merged = auditLogRepository.findByEntityTypesAndEntityId(
+                MybatisPlusPageUtils.toMpPage(pageable),
+                List.of("KNOWLEDGE_ITEM", "KNOWLEDGE_ITEM_RESOURCE"),
+                itemId);
+        return MybatisPlusPageUtils.toSpringPage(merged, pageable);
+    }
+
+    private void saveSnapshotVersion(KnowledgeItemPO item, String description) {
+        versionService.saveVersion("KNOWLEDGE_ITEM", item.getId(), snapshotJson(item), description);
+    }
+
+    private String snapshotJson(KnowledgeItemPO item) {
+        try {
+            KnowledgeItemSnapshot snapshot = KnowledgeItemSnapshot.builder()
+                    .title(item.getTitle())
+                    .description(item.getDescription())
+                    .content(item.getContent())
+                    .fileUrl(item.getFileUrl())
+                    .fileType(item.getFileType())
+                    .category(item.getCategory())
+                    .tags(item.getTags())
+                    .extractedText(item.getExtractedText())
+                    .sourceType(item.getSourceType())
+                    .status(item.getStatus())
+                    .build();
+            return objectMapper.writeValueAsString(snapshot);
+        } catch (Exception e) {
+            throw new BusinessException(500, "Failed to serialize knowledge snapshot");
+        }
+    }
+
+    private void applySnapshot(KnowledgeItemPO item, String content) {
+        try {
+            KnowledgeItemSnapshot snapshot = objectMapper.readValue(content, KnowledgeItemSnapshot.class);
+            item.setTitle(snapshot.getTitle());
+            item.setDescription(snapshot.getDescription());
+            item.setContent(snapshot.getContent());
+            item.setFileUrl(snapshot.getFileUrl());
+            item.setFileType(snapshot.getFileType());
+            item.setCategory(snapshot.getCategory());
+            item.setTags(snapshot.getTags());
+            item.setExtractedText(snapshot.getExtractedText());
+            if (snapshot.getSourceType() != null && !snapshot.getSourceType().isBlank()) {
+                item.setSourceType(snapshot.getSourceType());
+            }
+            if (snapshot.getStatus() != null && !snapshot.getStatus().isBlank()) {
+                item.setStatus(snapshot.getStatus());
+            }
+        } catch (Exception e) {
+            throw new BusinessException(500, "Failed to parse knowledge snapshot");
+        }
+    }
+
+    private String resourceJson(KnowledgeResourcePO po) {
+        try {
+            return objectMapper.writeValueAsString(java.util.Map.of(
+                    "resourceId", po.getId(),
+                    "knowledgeItemId", po.getKnowledgeItemId(),
+                    "resourceType", defaultIfBlank(po.getResourceType(), ""),
+                    "title", defaultIfBlank(po.getTitle(), ""),
+                    "url", defaultIfBlank(po.getUrl(), ""),
+                    "description", defaultIfBlank(po.getDescription(), "")
+            ));
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
+    private void writeAudit(String entityType, Long entityId, String action, String oldValue, String newValue) {
+        Long operatorId = null;
+        String operatorName = "SYSTEM";
+        try {
+            User current = SecurityUtils.getCurrentUser();
+            operatorId = current.getId();
+            operatorName = current.getUsername();
+        } catch (Exception ignored) {
+        }
+        auditLogRepository.insert(AuditLogPO.builder()
+                .entityType(entityType)
+                .entityId(entityId)
+                .action(action)
+                .oldValue(oldValue)
+                .newValue(newValue)
+                .operatorId(operatorId)
+                .operatorName(operatorName)
+                .build());
     }
 
     private KnowledgeItemPO saveSummary(Long courseId, Long userId, String prefix, String title,
@@ -502,6 +660,23 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
                 .createdBy(po.getCreatedBy())
                 .createdAt(po.getCreatedAt())
                 .build();
+    }
+
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    private static class KnowledgeItemSnapshot {
+        private String title;
+        private String description;
+        private String content;
+        private String fileUrl;
+        private String fileType;
+        private String category;
+        private String tags;
+        private String extractedText;
+        private String sourceType;
+        private String status;
     }
 
 }

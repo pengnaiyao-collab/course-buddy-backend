@@ -11,14 +11,17 @@ import com.coursebuddy.domain.dto.ChatRequestDTO;
 import com.coursebuddy.domain.po.AiUsageStatsPO;
 import com.coursebuddy.domain.po.ConversationMessagePO;
 import com.coursebuddy.domain.po.ConversationPO;
+import com.coursebuddy.domain.po.KnowledgeItemPO;
 import com.coursebuddy.domain.vo.AiUsageStatsVO;
 import com.coursebuddy.domain.vo.ChatMessageVO;
 import com.coursebuddy.domain.vo.ChatResponseVO;
 import com.coursebuddy.domain.vo.ConversationVO;
+import com.coursebuddy.domain.vo.KnowledgeSourceVO;
 import com.coursebuddy.converter.ConversationConverter;
 import com.coursebuddy.mapper.AiUsageStatsMapper;
 import com.coursebuddy.mapper.ConversationMessageMapper;
 import com.coursebuddy.mapper.ConversationMapper;
+import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.service.IXunFeiAiService;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -30,12 +33,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,9 +53,11 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
     private final ConversationMapper conversationRepository;
     private final ConversationMessageMapper messageRepository;
     private final AiUsageStatsMapper usageStatsRepository;
+    private final KnowledgeItemMapper knowledgeItemRepository;
     private final ConversationConverter conversationMapper;
 
     private static final int MAX_CONTEXT_MESSAGES = 20;
+    private static final int MAX_SOURCE_ITEMS = 3;
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
 
     @PreDestroy
@@ -74,7 +82,10 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
 
         ConversationPO conversation = resolveConversation(dto, currentUser.getId());
 
-        List<Map<String, String>> messages = buildMessageContext(conversation.getId(), dto.getMessage());
+        List<KnowledgeItemPO> sourceItems = findRelevantKnowledgeItems(dto);
+        List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
+        String userMessageForModel = mergeMessageWithKnowledge(dto.getMessage(), sourceItems);
+        List<Map<String, String>> messages = buildMessageContext(conversation.getId(), userMessageForModel);
 
         XunFeiSparkClient.SparkChatResult result;
         try {
@@ -111,6 +122,10 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                 .title(conversation.getTitle())
                 .answer(result.content())
                 .messages(msgVOs)
+                .sources(sources)
+                .relatedKnowledgeIds(sources.stream()
+                        .map(KnowledgeSourceVO::getKnowledgeItemId)
+                        .collect(Collectors.toList()))
                 .createdAt(conversation.getCreatedAt())
                 .build();
     }
@@ -126,7 +141,10 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
 
             try {
                 ConversationPO conversation = resolveConversation(dto, currentUser.getId());
-                List<Map<String, String>> messages = buildMessageContext(conversation.getId(), dto.getMessage());
+                List<KnowledgeItemPO> sourceItems = findRelevantKnowledgeItems(dto);
+                List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
+                String userMessageForModel = mergeMessageWithKnowledge(dto.getMessage(), sourceItems);
+                List<Map<String, String>> messages = buildMessageContext(conversation.getId(), userMessageForModel);
                 saveMessage(conversation.getId(), "user", dto.getMessage(), null);
 
                 sparkClient.chatStream(messages, String.valueOf(currentUser.getId()),
@@ -154,7 +172,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                                     recordUsageStats(currentUser.getId(), "CHAT_STREAM", promptTokens,
                                             completionTokens, System.currentTimeMillis() - startTime, "SUCCESS", null);
                                     emitter.send(SseEmitter.event().name("done")
-                                            .data("{\"conversationId\":" + conversation.getId() + "}"));
+                                            .data(buildDoneEventPayload(conversation.getId(), sources)));
                                     emitter.complete();
                                 } catch (Exception e) {
                                     log.error("SSE stream completion failed", e);
@@ -296,6 +314,86 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
         userMsg.put("content", newUserMessage);
         messages.add(userMsg);
         return messages;
+    }
+
+    private List<KnowledgeItemPO> findRelevantKnowledgeItems(ChatRequestDTO dto) {
+        if (!dto.isIncludeKnowledgeContext() || dto.getCourseId() == null) {
+            return List.of();
+        }
+        String keyword = dto.getMessage() == null ? "" : dto.getMessage().trim();
+        if (keyword.isBlank()) {
+            return List.of();
+        }
+
+        List<KnowledgeItemPO> candidates = knowledgeItemRepository.searchByCourseAndKeyword(dto.getCourseId(), keyword);
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+
+        String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
+        return candidates.stream()
+                .sorted(Comparator.comparingInt((KnowledgeItemPO i) -> relevanceScore(i, lowerKeyword)).reversed())
+                .limit(MAX_SOURCE_ITEMS)
+                .toList();
+    }
+
+    private int relevanceScore(KnowledgeItemPO item, String lowerKeyword) {
+        int score = 0;
+        if (item.getTitle() != null && item.getTitle().toLowerCase(Locale.ROOT).contains(lowerKeyword)) score += 4;
+        if (item.getTags() != null && item.getTags().toLowerCase(Locale.ROOT).contains(lowerKeyword)) score += 3;
+        if (item.getDescription() != null && item.getDescription().toLowerCase(Locale.ROOT).contains(lowerKeyword)) score += 2;
+        if (item.getContent() != null && item.getContent().toLowerCase(Locale.ROOT).contains(lowerKeyword)) score += 1;
+        return score;
+    }
+
+    private List<KnowledgeSourceVO> toSourceVOs(List<KnowledgeItemPO> sourceItems) {
+        return sourceItems.stream().map(item -> KnowledgeSourceVO.builder()
+                .knowledgeItemId(item.getId())
+                .title(item.getTitle())
+                .snippet(shortenSnippet(item.getContent() != null ? item.getContent() : item.getDescription(), 180))
+                .sourceType(item.getSourceType())
+                .build()).toList();
+    }
+
+    private String mergeMessageWithKnowledge(String originalMessage, List<KnowledgeItemPO> sourceItems) {
+        if (sourceItems.isEmpty()) {
+            return originalMessage;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("请优先基于课程知识库回答，回答末尾给出你使用的知识条目编号，例如 [K12]。\n");
+        sb.append("知识库上下文：\n");
+        for (KnowledgeItemPO item : sourceItems) {
+            sb.append("[K").append(item.getId()).append("] ")
+                    .append(defaultIfBlank(item.getTitle(), "Untitled")).append("\n")
+                    .append(shortenSnippet(item.getContent() != null ? item.getContent() : item.getDescription(), 280))
+                    .append("\n");
+        }
+        sb.append("用户问题：").append(originalMessage);
+        return sb.toString();
+    }
+
+    private String shortenSnippet(String text, int maxLen) {
+        if (text == null || text.isBlank()) return "";
+        String normalized = text.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= maxLen) return normalized;
+        return normalized.substring(0, maxLen).trim() + "...";
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String buildDoneEventPayload(Long conversationId, List<KnowledgeSourceVO> sources) {
+        String sourceJson = sources.stream()
+                .map(s -> "{\"knowledgeItemId\":" + s.getKnowledgeItemId()
+                        + ",\"title\":\"" + escapeJson(defaultIfBlank(s.getTitle(), "")) + "\""
+                        + ",\"snippet\":\"" + escapeJson(defaultIfBlank(s.getSnippet(), "")) + "\"}")
+                .collect(Collectors.joining(","));
+        return "{\"conversationId\":" + conversationId + ",\"sources\":[" + sourceJson + "]}";
+    }
+
+    private String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private void saveMessage(Long conversationId, String role, String content, Integer tokenCount) {

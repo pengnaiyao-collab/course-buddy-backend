@@ -4,6 +4,8 @@ import com.coursebuddy.common.response.ApiResponse;
 import com.coursebuddy.domain.dto.KnowledgeAnalyzeDTO;
 import com.coursebuddy.domain.dto.KnowledgeItemDTO;
 import com.coursebuddy.domain.dto.KnowledgeResourceDTO;
+import com.coursebuddy.domain.po.AuditLogPO;
+import com.coursebuddy.domain.po.VersionPO;
 import com.coursebuddy.domain.vo.KnowledgeAnalyzeResultVO;
 import com.coursebuddy.domain.vo.KnowledgeGraphVO;
 import com.coursebuddy.domain.vo.KnowledgeItemVO;
@@ -145,5 +147,31 @@ public class KnowledgeBaseController {
             @PathVariable Long resourceId) {
         service.deleteResource(courseId, id, resourceId);
         return ApiResponse.success(null);
+    }
+
+    @Operation(summary = "List version history for a knowledge point", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/{id}/versions")
+    public ApiResponse<List<VersionPO>> listVersions(
+            @PathVariable Long courseId,
+            @PathVariable Long id) {
+        return ApiResponse.success(service.listVersions(courseId, id));
+    }
+
+    @Operation(summary = "Rollback a knowledge point to a specific version", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/{id}/rollback")
+    public ApiResponse<KnowledgeItemVO> rollback(
+            @PathVariable Long courseId,
+            @PathVariable Long id,
+            @RequestParam Integer versionNumber) {
+        return ApiResponse.success(service.rollbackToVersion(courseId, id, versionNumber));
+    }
+
+    @Operation(summary = "List audit logs for a knowledge point", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/{id}/audit-logs")
+    public ApiResponse<Page<AuditLogPO>> listAuditLogs(
+            @PathVariable Long courseId,
+            @PathVariable Long id,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.success(service.listAuditLogs(courseId, id, pageable));
     }
 }

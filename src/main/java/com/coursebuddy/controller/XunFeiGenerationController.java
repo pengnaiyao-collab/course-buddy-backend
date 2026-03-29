@@ -51,6 +51,48 @@ public class XunFeiGenerationController {
         return ApiResponse.success("知识点拆解成功", contentGeneratorService.generateBreakdown(dto));
     }
 
+    @Operation(summary = "生成阶梯式学习路径（含资料推送）", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/learning-path")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateLearningPath(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("学习路径生成成功", contentGeneratorService.generateLearningPath(dto));
+    }
+
+    @Operation(summary = "习题解析生成", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/explanation")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateQuestionExplanation(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("习题解析生成成功", contentGeneratorService.generateQuestionExplanation(dto));
+    }
+
+    @Operation(summary = "背诵口诀生成", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/mnemonic")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateMnemonic(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("背诵口诀生成成功", contentGeneratorService.generateMnemonic(dto));
+    }
+
+    @Operation(summary = "实验/作业报告框架生成", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/report-framework")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateReportFramework(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("报告框架生成成功", contentGeneratorService.generateReportFramework(dto));
+    }
+
+    @Operation(summary = "核心要点梳理", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/core-points")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateCorePoints(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("核心要点梳理成功", contentGeneratorService.generateCorePoints(dto));
+    }
+
+    @Operation(summary = "数据处理思路建议", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/data-processing")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<GeneratedContentVO> generateDataProcessingPlan(@Valid @RequestBody GenerateContentDTO dto) {
+        return ApiResponse.success("数据处理思路建议生成成功", contentGeneratorService.generateDataProcessingPlan(dto));
+    }
+
     @Operation(summary = "获取生成历史列表", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping
     public ApiResponse<Page<GeneratedContentVO>> listGeneratedContents(

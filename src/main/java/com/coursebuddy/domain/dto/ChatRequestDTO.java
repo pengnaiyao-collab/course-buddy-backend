@@ -21,4 +21,10 @@ public class ChatRequestDTO {
 
     /** 是否包含历史上下文 */
     private boolean includeHistory = true;
+
+    /** 课程 ID（用于私域知识检索增强） */
+    private Long courseId;
+
+    /** 是否启用知识库增强（默认启用） */
+    private boolean includeKnowledgeContext = true;
 }

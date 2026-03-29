@@ -14,6 +14,7 @@ import com.coursebuddy.domain.vo.GeneratedContentVO;
 import com.coursebuddy.converter.GeneratedContentConverter;
 import com.coursebuddy.mapper.AiUsageStatsMapper;
 import com.coursebuddy.mapper.GeneratedContentMapper;
+import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.service.IContentGeneratorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -34,6 +36,7 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
     private final XunFeiProperties properties;
     private final GeneratedContentMapper contentRepository;
     private final AiUsageStatsMapper usageStatsRepository;
+    private final KnowledgeItemMapper knowledgeItemRepository;
     private final GeneratedContentConverter contentMapper;
 
     @Override
@@ -66,6 +69,48 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
 
     @Override
     @Transactional
+    public GeneratedContentVO generateLearningPath(GenerateContentDTO dto) {
+        dto.setContentType("LEARNING_PATH");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
+    public GeneratedContentVO generateQuestionExplanation(GenerateContentDTO dto) {
+        dto.setContentType("EXPLANATION");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
+    public GeneratedContentVO generateMnemonic(GenerateContentDTO dto) {
+        dto.setContentType("MNEMONIC");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
+    public GeneratedContentVO generateReportFramework(GenerateContentDTO dto) {
+        dto.setContentType("REPORT_FRAMEWORK");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
+    public GeneratedContentVO generateCorePoints(GenerateContentDTO dto) {
+        dto.setContentType("CORE_POINTS");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
+    public GeneratedContentVO generateDataProcessingPlan(GenerateContentDTO dto) {
+        dto.setContentType("DATA_PROCESSING");
+        return generate(dto);
+    }
+
+    @Override
+    @Transactional
     public GeneratedContentVO generate(GenerateContentDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
         long startTime = System.currentTimeMillis();
@@ -87,7 +132,12 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
             List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", prompt));
             XunFeiSparkClient.SparkChatResult result = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
 
-            po.setContent(result.content());
+            String finalContent = result.content();
+            if ("LEARNING_PATH".equalsIgnoreCase(dto.getContentType())) {
+                finalContent = appendRecommendedResources(finalContent, dto.getCourseId(), dto.getSubject());
+            }
+
+            po.setContent(finalContent);
             po.setStatus("COMPLETED");
             po.setTokenCount(result.totalTokens());
             contentRepository.updateById(po);
@@ -160,6 +210,54 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
             case "BREAKDOWN" -> String.format(
                     "请对以下知识点进行详细拆解，包括定义、原理、关键要素、应用场景和常见误区。\n知识点：%s%s",
                     dto.getSubject(), requirements);
+            case "LEARNING_PATH" -> String.format(
+                    "请为零基础学习者生成阶梯式学习路径。\n主题：%s\n" +
+                            "输出格式要求：\n" +
+                            "1) 总学习目标\n" +
+                            "2) 分阶段计划（入门/基础/进阶/冲刺），每阶段含目标、每日任务、验收方式\n" +
+                            "3) 每周复盘建议\n" +
+                            "4) 常见卡点与解决策略\n%s",
+                    dto.getSubject(), requirements);
+            case "EXPLANATION" -> String.format(
+                    "请对以下题目进行详细解析。\n题目：%s\n" +
+                            "输出要求：\n" +
+                            "1) 题意理解\n" +
+                            "2) 解题思路\n" +
+                            "3) 易错点\n" +
+                            "4) 举一反三练习建议\n%s",
+                    dto.getSubject(), requirements);
+            case "MNEMONIC" -> String.format(
+                    "请为以下知识点生成便于背诵的口诀/记忆法。\n知识点：%s\n" +
+                            "输出要求：\n" +
+                            "1) 主口诀（简短押韵）\n" +
+                            "2) 口诀拆解含义\n" +
+                            "3) 使用场景\n" +
+                            "4) 一句话速记版本\n%s",
+                    dto.getSubject(), requirements);
+            case "REPORT_FRAMEWORK" -> String.format(
+                    "请为以下主题生成实验/作业报告框架。\n主题：%s\n" +
+                            "输出要求：\n" +
+                            "1) 报告目录结构（一级/二级标题）\n" +
+                            "2) 每一节应写内容与建议篇幅\n" +
+                            "3) 可复用模板段落\n" +
+                            "4) 提交前检查清单\n%s",
+                    dto.getSubject(), requirements);
+            case "CORE_POINTS" -> String.format(
+                    "请对以下主题做核心要点梳理。\n主题：%s\n" +
+                            "输出要求：\n" +
+                            "1) 必懂概念\n" +
+                            "2) 关键结论\n" +
+                            "3) 易错点与纠正\n" +
+                            "4) 3分钟速览版\n%s",
+                    dto.getSubject(), requirements);
+            case "DATA_PROCESSING" -> String.format(
+                    "请为以下任务给出数据处理思路建议。\n任务主题：%s\n" +
+                            "输出要求：\n" +
+                            "1) 数据清洗步骤\n" +
+                            "2) 特征构造/指标设计建议\n" +
+                            "3) 分析流程（含可视化建议）\n" +
+                            "4) 结果验证与风险提示\n%s",
+                    dto.getSubject(), requirements);
             default -> throw new BusinessException(400, "不支持的生成类型：" + dto.getContentType());
         };
     }
@@ -194,5 +292,34 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
         } catch (Exception e) {
             log.warn("Failed to record AI usage stats", e);
         }
+    }
+
+    private String appendRecommendedResources(String content, Long courseId, String subject) {
+        if (courseId == null) return content;
+        List<com.coursebuddy.domain.po.KnowledgeItemPO> matched = knowledgeItemRepository
+                .searchByCourseAndKeyword(courseId, subject == null ? "" : subject.trim());
+        if (matched.isEmpty()) {
+            matched = knowledgeItemRepository.findByCourseId(courseId);
+        }
+        List<com.coursebuddy.domain.po.KnowledgeItemPO> top = matched.stream().limit(5).toList();
+        if (top.isEmpty()) return content;
+
+        StringBuilder sb = new StringBuilder(content == null ? "" : content);
+        sb.append("\n\n---\n");
+        sb.append("### 对应资料关联推送\n");
+        for (com.coursebuddy.domain.po.KnowledgeItemPO item : top) {
+            sb.append("- [知识点#").append(item.getId()).append("] ")
+                    .append(defaultIfBlank(item.getTitle(), "Untitled"))
+                    .append("（")
+                    .append(defaultIfBlank(item.getCategory(), "General"))
+                    .append("，")
+                    .append(defaultIfBlank(item.getSourceType(), "MANUAL").toUpperCase(Locale.ROOT))
+                    .append("）\n");
+        }
+        return sb.toString();
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

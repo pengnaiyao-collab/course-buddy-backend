@@ -3,6 +3,8 @@ package com.coursebuddy.service;
 import com.coursebuddy.domain.dto.KnowledgeAnalyzeDTO;
 import com.coursebuddy.domain.dto.KnowledgeItemDTO;
 import com.coursebuddy.domain.dto.KnowledgeResourceDTO;
+import com.coursebuddy.domain.po.AuditLogPO;
+import com.coursebuddy.domain.po.VersionPO;
 import com.coursebuddy.domain.vo.KnowledgeAnalyzeResultVO;
 import com.coursebuddy.domain.vo.KnowledgeGraphVO;
 import com.coursebuddy.domain.vo.KnowledgeItemVO;
@@ -27,4 +29,7 @@ public interface IKnowledgeBaseService {
     KnowledgeResourceVO addResource(Long courseId, Long itemId, KnowledgeResourceDTO dto);
     List<KnowledgeResourceVO> listResources(Long courseId, Long itemId);
     void deleteResource(Long courseId, Long itemId, Long resourceId);
+    List<VersionPO> listVersions(Long courseId, Long itemId);
+    KnowledgeItemVO rollbackToVersion(Long courseId, Long itemId, Integer versionNumber);
+    Page<AuditLogPO> listAuditLogs(Long courseId, Long itemId, Pageable pageable);
 }

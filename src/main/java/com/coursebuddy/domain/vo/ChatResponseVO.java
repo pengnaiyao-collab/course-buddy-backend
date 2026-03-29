@@ -14,5 +14,7 @@ public class ChatResponseVO {
     private String title;
     private String answer;
     private List<ChatMessageVO> messages;
+    private List<KnowledgeSourceVO> sources;
+    private List<Long> relatedKnowledgeIds;
     private LocalDateTime createdAt;
 }
