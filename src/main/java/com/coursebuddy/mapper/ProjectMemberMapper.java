@@ -19,7 +19,7 @@ public interface ProjectMemberMapper extends BaseMapper<ProjectMemberPO> {
     List<ProjectMemberPO> findByProjectId(@Param("projectId") Long projectId);
 
     @Select("SELECT * FROM project_members WHERE project_id = #{projectId}")
-    IPage<ProjectMemberPO> findByProjectId(Page<ProjectMemberPO> page, @Param("projectId") Long projectId);
+    IPage<ProjectMemberPO> findPageByProjectId(Page<ProjectMemberPO> page, @Param("projectId") Long projectId);
 
     @Select("SELECT * FROM project_members WHERE project_id = #{projectId} AND user_id = #{userId}")
     Optional<ProjectMemberPO> findByProjectIdAndUserId(@Param("projectId") Long projectId, @Param("userId") Long userId);

@@ -14,7 +14,7 @@ import java.util.List;
 public interface KnowledgeItemMapper extends BaseMapper<KnowledgeItemPO> {
 
     @Select("SELECT * FROM knowledge_items WHERE course_id = #{courseId}")
-    IPage<KnowledgeItemPO> findByCourseId(Page<KnowledgeItemPO> page, @Param("courseId") Long courseId);
+    IPage<KnowledgeItemPO> findPageByCourseId(Page<KnowledgeItemPO> page, @Param("courseId") Long courseId);
 
     @Select("SELECT * FROM knowledge_items WHERE course_id = #{courseId} AND LOWER(title) LIKE LOWER(CONCAT('%', #{keyword}, '%'))")
     IPage<KnowledgeItemPO> findByCourseIdAndTitleContainingIgnoreCase(Page<KnowledgeItemPO> page, @Param("courseId") Long courseId, @Param("keyword") String keyword);
@@ -28,7 +28,7 @@ public interface KnowledgeItemMapper extends BaseMapper<KnowledgeItemPO> {
     @Select("<script>" +
             "SELECT * FROM knowledge_items WHERE course_id = #{courseId} " +
             "<if test='keyword != null and keyword != \"\"'>" +
-            "AND LOWER(CONCAT(COALESCE(title,''), ' ', COALESCE(description,''), ' ', COALESCE(content,''), ' ', COALESCE(extracted_text,''), ' ', COALESCE(tags,''))) " +
+            "AND LOWER(CONCAT(COALESCE(title,''), ' ', COALESCE(description,''), ' ', COALESCE(extracted_text,''), ' ', COALESCE(tags,''))) " +
             "LIKE LOWER(CONCAT('%', #{keyword}, '%'))" +
             "</if>" +
             "</script>")

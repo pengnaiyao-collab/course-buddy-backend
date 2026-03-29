@@ -2,21 +2,37 @@
 -- Adds missing columns to notes and note_categories, and creates note_tag_relations table
 
 -- ============================================================
--- 1. Add missing columns to notes table
--- ============================================================
-ALTER TABLE notes
-    ADD COLUMN IF NOT EXISTS category_id BIGINT      COMMENT '所属分类ID（FK到note_categories）',
-    ADD COLUMN IF NOT EXISTS description TEXT        COMMENT '笔记摘要/描述',
-    ADD COLUMN IF NOT EXISTS status      VARCHAR(16) NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/PUBLISHED/ARCHIVED',
-    ADD COLUMN IF NOT EXISTS is_public   TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '是否公开分享',
-    ADD COLUMN IF NOT EXISTS is_deleted  TINYINT(1)  NOT NULL DEFAULT 0 COMMENT '是否软删除',
-    ADD COLUMN IF NOT EXISTS deleted_at  DATETIME    COMMENT '软删除时间';
+-- Add columns to notes only when missing (MySQL 5.7 compatible)
+SET @db := DATABASE();
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='category_id') = 0,
+    'ALTER TABLE notes ADD COLUMN category_id BIGINT COMMENT ''所属分类ID（FK到note_categories）''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='description') = 0,
+    'ALTER TABLE notes ADD COLUMN description TEXT COMMENT ''笔记摘要/ 描述''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='status') = 0,
+    'ALTER TABLE notes ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT ''DRAFT'' COMMENT ''DRAFT/PUBLISHED/ARCHIVED''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='is_public') = 0,
+    'ALTER TABLE notes ADD COLUMN is_public TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否公开分享''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='is_deleted') = 0,
+    'ALTER TABLE notes ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT ''是否软删除''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='deleted_at') = 0,
+    'ALTER TABLE notes ADD COLUMN deleted_at DATETIME COMMENT ''软删除时间''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ============================================================
--- 2. Add description column to note_categories
--- ============================================================
-ALTER TABLE note_categories
-    ADD COLUMN IF NOT EXISTS description TEXT COMMENT '分类描述';
+SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='note_categories' AND column_name='description') = 0,
+    'ALTER TABLE note_categories ADD COLUMN description TEXT COMMENT ''分类描述''', 'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ============================================================
 -- 3. Create note_tag_relations table

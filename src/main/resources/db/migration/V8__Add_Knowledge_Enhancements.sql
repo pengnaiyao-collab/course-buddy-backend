@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS ocr_results (
 
 -- Add extracted_text and status columns to knowledge_items for full-text search
 ALTER TABLE knowledge_items
-    ADD COLUMN IF NOT EXISTS extracted_text LONGTEXT COMMENT '从文件提取的文本内容',
-    ADD COLUMN IF NOT EXISTS source_type    VARCHAR(64) DEFAULT 'MANUAL' COMMENT 'MANUAL, FILE, WEB, OCR',
-    ADD COLUMN IF NOT EXISTS status        VARCHAR(32) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED';
+    ADD COLUMN extracted_text LONGTEXT COMMENT '从文件提取的文本内容',
+    ADD COLUMN source_type    VARCHAR(64) DEFAULT 'MANUAL' COMMENT 'MANUAL, FILE, WEB, OCR',
+    ADD COLUMN status        VARCHAR(32) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED';
 
 -- Full-text index on knowledge_items for search (use DROP IF EXISTS + ADD pattern for idempotency)
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS

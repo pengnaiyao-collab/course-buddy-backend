@@ -1,19 +1,95 @@
 spring:
+  application:
+    name: course-buddy-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/course_buddy?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: password
+    url: jdbc:mysql://localhost:3307/course_buddy?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: course_buddy_user
+    password: changeme
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5
-  jpa:
-    show-sql: true
   data:
     redis:
       host: localhost
-      port: 6379
+      port: 6380
+      password: 123456
   flyway:
     enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# MyBatis-Plus 配置（这个保留）
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.coursebuddy.domain.po
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deletedAt
+      logic-delete-value: "NOW()"
+      logic-not-delete-value: "NULL"
+
+servlet:
+  multipart:
+    max-file-size: 20MB
+    max-request-size: 20MB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+minio:
+  endpoint: http://localhost:9002
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: course-buddy
+  maxFileSize: 1073741824
+  chunkSize: 5242880
+
+jwt:
+  secret: course-buddy-super-secret-key-for-jwt-token-signing-at-least-256-bits
+  expiration: 86400000
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+note:
+  export:
+    pdf:
+      margin: 50
+      body-font-size: 11
+      title-font-size: 16
+    markdown:
+      charset: UTF-8
+  version:
+    max-keep: 0
+  share:
+    default-ttl-seconds: 0
+
+xunfei:
+  enabled: true
+  appId: "${XUNFEI_APP_ID:92f34652}"
+  apiKey: "${XUNFEI_API_KEY:d9ef617fc785aed93fcc7ad835cb4e21}"
+  apiSecret: "${XUNFEI_API_SECRET:OTk3MjdjN2Q3N2QwYzEyMDRiMDFjZDEx}"
+  endpoint: "wss://spark-api.xf-yun.com/v3.5/chat"
+  model: "generalv3.5"
 
 logging:
   level:

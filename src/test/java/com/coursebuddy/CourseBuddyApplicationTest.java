@@ -6,11 +6,13 @@ import com.coursebuddy.auth.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL",
         "spring.datasource.driver-class-name=org.h2.Driver",

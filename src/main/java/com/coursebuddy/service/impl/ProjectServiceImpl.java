@@ -161,7 +161,7 @@ public class ProjectServiceImpl implements IProjectService {
     @Transactional(readOnly = true)
     public Page<ProjectMemberVO> listMembers(Long projectId, Pageable pageable) {
         getProjectPo(projectId);
-        IPage<ProjectMemberPO> poPage = memberRepository.findByProjectId(
+        IPage<ProjectMemberPO> poPage = memberRepository.findPageByProjectId(
                 MybatisPlusPageUtils.toMpPage(pageable), projectId);
         return memberMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }

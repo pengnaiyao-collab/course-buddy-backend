@@ -5,8 +5,8 @@
 -- 1. User profile extensions
 -- ============================================================
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS bio          TEXT           COMMENT '个人简介',
-    ADD COLUMN IF NOT EXISTS avatar_url   VARCHAR(512)   COMMENT '头像URL';
+    ADD COLUMN bio          TEXT           COMMENT '个人简介',
+    ADD COLUMN avatar_url   VARCHAR(512)   COMMENT '头像URL';
 
 -- ============================================================
 -- 2. User settings

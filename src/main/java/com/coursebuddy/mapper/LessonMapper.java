@@ -17,9 +17,6 @@ public interface LessonMapper extends BaseMapper<LessonPO> {
     @Select("SELECT * FROM lessons WHERE course_id = #{courseId} AND deleted_at IS NULL ORDER BY lesson_order ASC")
     IPage<LessonPO> findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(Page<LessonPO> page, @Param("courseId") Long courseId);
 
-    @Select("SELECT * FROM lessons WHERE course_id = #{courseId} AND deleted_at IS NULL ORDER BY lesson_order ASC")
-    List<LessonPO> findByCourseIdAndDeletedAtIsNullOrderByLessonOrderAsc(@Param("courseId") Long courseId);
-
     @Select("SELECT MAX(lesson_order) FROM lessons WHERE course_id = #{courseId}")
     Optional<Integer> findMaxLessonOrderByCourseId(@Param("courseId") Long courseId);
 

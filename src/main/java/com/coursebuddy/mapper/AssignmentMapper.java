@@ -16,9 +16,6 @@ public interface AssignmentMapper extends BaseMapper<AssignmentPO> {
     @Select("SELECT * FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
     IPage<AssignmentPO> findByCourseIdAndDeletedAtIsNull(Page<AssignmentPO> page, @Param("courseId") Long courseId);
 
-    @Select("SELECT * FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
-    List<AssignmentPO> findByCourseIdAndDeletedAtIsNull(@Param("courseId") Long courseId);
-
     @Select("SELECT COUNT(*) FROM assignments WHERE course_id = #{courseId} AND deleted_at IS NULL")
     long countByCourseIdAndDeletedAtIsNull(@Param("courseId") Long courseId);
 }

@@ -2,12 +2,12 @@
 -- Adds new auth-related columns to the users table and creates the tokens table
 
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS real_name     VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS phone         VARCHAR(20),
-    ADD COLUMN IF NOT EXISTS avatar        LONGTEXT,
-    ADD COLUMN IF NOT EXISTS is_active     BOOLEAN NOT NULL DEFAULT TRUE,
-    ADD COLUMN IF NOT EXISTS is_locked     BOOLEAN NOT NULL DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP NULL;
+    ADD COLUMN real_name     VARCHAR(50),
+    ADD COLUMN phone         VARCHAR(20),
+    ADD COLUMN avatar        LONGTEXT,
+    ADD COLUMN is_active     BOOLEAN NOT NULL DEFAULT TRUE,
+    ADD COLUMN is_locked     BOOLEAN NOT NULL DEFAULT FALSE,
+    ADD COLUMN last_login_at TIMESTAMP NULL;
 
 CREATE TABLE IF NOT EXISTS tokens (
     id                 BIGINT    NOT NULL AUTO_INCREMENT,

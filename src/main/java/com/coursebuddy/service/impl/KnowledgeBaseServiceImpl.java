@@ -85,7 +85,7 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
     @Override
     @Transactional(readOnly = true)
     public Page<KnowledgeItemVO> listByCourse(Long courseId, Pageable pageable) {
-        IPage<KnowledgeItemPO> poPage = repository.findByCourseId(
+        IPage<KnowledgeItemPO> poPage = repository.findPageByCourseId(
                 MybatisPlusPageUtils.toMpPage(pageable), courseId);
         return mapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
@@ -144,7 +144,7 @@ public class KnowledgeBaseServiceImpl implements IKnowledgeBaseService {
     @Transactional(readOnly = true)
     public Page<KnowledgeItemVO> search(Long courseId, String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
-            IPage<KnowledgeItemPO> poPage = repository.findByCourseId(
+                IPage<KnowledgeItemPO> poPage = repository.findPageByCourseId(
                     MybatisPlusPageUtils.toMpPage(pageable), courseId);
             return mapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
         }

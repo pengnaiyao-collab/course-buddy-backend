@@ -19,7 +19,4 @@ public interface GradeSheetMapper extends BaseMapper<GradeSheetPO> {
 
     @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId}")
     IPage<GradeSheetPO> findByCourseId(Page<GradeSheetPO> page, @Param("courseId") Long courseId);
-
-    @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId}")
-    List<GradeSheetPO> findByCourseId(@Param("courseId") Long courseId);
 }

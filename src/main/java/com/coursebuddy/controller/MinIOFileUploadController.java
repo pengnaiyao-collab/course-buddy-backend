@@ -16,9 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
-@RequestMapping("/v1/files")
+@RequestMapping({"/v1/files", "/files"})
 @RequiredArgsConstructor
 @Slf4j
 public class MinIOFileUploadController {
@@ -53,6 +54,12 @@ public class MinIOFileUploadController {
     @GetMapping("/upload/progress/{sessionId}")
     public ApiResponse<Object> getProgress(@PathVariable String sessionId) {
         return ApiResponse.success(uploadService.getProgress(sessionId));
+    }
+
+    @GetMapping
+    public ApiResponse<Object> listFiles() {
+        // 当前未实现文件列表，先返回空列表避免前端 404
+        return ApiResponse.success(List.of());
     }
 
     @PostMapping("/upload/cancel/{sessionId}")

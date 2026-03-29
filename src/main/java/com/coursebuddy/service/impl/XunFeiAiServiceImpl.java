@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -134,6 +136,7 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
     public SseEmitter chatStream(ChatRequestDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
         SseEmitter emitter = new SseEmitter(properties.getTimeout());
+        AtomicBoolean emitterCompleted = new AtomicBoolean(false);
 
         sseExecutor.submit(() -> {
             long startTime = System.currentTimeMillis();
@@ -151,17 +154,43 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                         new XunFeiSparkClient.SparkStreamListener() {
                             @Override
                             public void onToken(String token) {
+                                // 检查emitter是否已完成，避免已完成emitter继续发送
+                                if (emitterCompleted.get()) {
+                                    log.debug("Emitter already completed, skipping token send");
+                                    return;
+                                }
                                 try {
                                     fullAnswer.append(token);
                                     emitter.send(SseEmitter.event().data(token));
+                                } catch (IOException e) {
+                                    // 网络中断或客户端断开连接
+                                    log.warn("Client disconnected while sending token: {}", e.getMessage());
+                                    emitterCompleted.set(true);
+                                    try {
+                                        emitter.completeWithError(e);
+                                    } catch (Exception ex) {
+                                        log.debug("Emitter already completed, no need to completeWithError");
+                                    }
+                                } catch (IllegalStateException e) {
+                                    // Emitter已经完成
+                                    log.warn("Emitter already completed when sending token: {}", e.getMessage());
+                                    emitterCompleted.set(true);
                                 } catch (Exception e) {
                                     log.warn("Failed to send SSE token", e);
+                                    emitterCompleted.set(true);
                                 }
                             }
 
                             @Override
                             public void onComplete(int promptTokens, int completionTokens) {
+                                // 双重检查 + 原子操作，确保只完成一次
+                                if (!emitterCompleted.compareAndSet(false, true)) {
+                                    log.debug("Emitter already marked as completed, skipping onComplete");
+                                    return;
+                                }
+
                                 try {
+                                    // 保存消息和更新对话
                                     saveMessage(conversation.getId(), "assistant", fullAnswer.toString(), null);
                                     if (conversation.getTitle() == null || conversation.getTitle().isBlank()) {
                                         String msg = dto.getMessage();
@@ -171,25 +200,67 @@ public class XunFeiAiServiceImpl implements IXunFeiAiService {
                                     }
                                     recordUsageStats(currentUser.getId(), "CHAT_STREAM", promptTokens,
                                             completionTokens, System.currentTimeMillis() - startTime, "SUCCESS", null);
-                                    emitter.send(SseEmitter.event().name("done")
-                                            .data(buildDoneEventPayload(conversation.getId(), sources)));
-                                    emitter.complete();
                                 } catch (Exception e) {
-                                    log.error("SSE stream completion failed", e);
-                                    emitter.completeWithError(e);
+                                    log.error("Error saving message in onComplete", e);
+                                }
+
+                                // 发送完成事件 - 分离关键操作
+                                try {
+                                    log.debug("Sending done event for conversation: {}", conversation.getId());
+                                    emitter.send(SseEmitter.event()
+                                            .name("done")
+                                            .data(buildDoneEventPayload(conversation.getId(), sources)));
+                                    log.debug("Done event sent successfully");
+                                } catch (IllegalStateException e) {
+                                    // Emitter 已经完成 - 这不是错误，只是说明流已在前面完成
+                                    log.debug("Emitter already completed when sending done event: {}", e.getMessage());
+                                } catch (Exception e) {
+                                    // 网络问题或其他异常 - 客户端可能已断开
+                                    log.warn("Exception while sending done event (client may have disconnected): {} - {}", e.getClass().getSimpleName(), e.getMessage());
+                                }
+
+                                // 完成emitter - 这是最后的操作
+                                try {
+                                    log.debug("Completing emitter");
+                                    emitter.complete();
+                                    log.debug("SSE stream completed successfully");
+                                } catch (IllegalStateException e) {
+                                    log.debug("Emitter already completed: {}", e.getMessage());
+                                } catch (Exception e) {
+                                    log.warn("Exception while completing emitter: {} - {}", e.getClass().getSimpleName(), e.getMessage());
                                 }
                             }
 
                             @Override
                             public void onError(Throwable t) {
+                                // 确保只完成一次
+                                if (!emitterCompleted.compareAndSet(false, true)) {
+                                    log.debug("Emitter already marked as completed, skipping onError");
+                                    return;
+                                }
+
                                 recordUsageStats(currentUser.getId(), "CHAT_STREAM", 0, 0,
                                         System.currentTimeMillis() - startTime, "FAILED", t.getMessage());
-                                emitter.completeWithError(t);
+                                try {
+                                    emitter.completeWithError(t);
+                                } catch (IllegalStateException e) {
+                                    log.debug("Emitter already completed when calling completeWithError: {}", e.getMessage());
+                                } catch (Exception e) {
+                                    log.warn("Exception while completing emitter with error: {} - {}", e.getClass().getSimpleName(), e.getMessage());
+                                }
                             }
                         });
             } catch (Exception e) {
                 log.error("Failed to start SSE stream for user {}", currentUser.getId(), e);
-                emitter.completeWithError(e);
+                if (!emitterCompleted.compareAndSet(false, true)) {
+                    log.debug("Emitter already completed, skipping outer exception handling");
+                    return;
+                }
+                try {
+                    emitter.completeWithError(e);
+                } catch (Exception ex) {
+                    log.debug("Failed to completeWithError in outer catch block");
+                }
             }
         });
 
