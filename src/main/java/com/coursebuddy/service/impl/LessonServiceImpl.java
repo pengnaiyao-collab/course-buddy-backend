@@ -39,7 +39,7 @@ public class LessonServiceImpl implements ILessonService {
         checkTeacherOrAdmin(currentUser);
         LessonPO po = lessonMapper.dtoToPo(dto);
         po.setCourseId(courseId);
-        if (po.getLessonOrder() == null || po.getLessonOrder() == 1) {
+        if (po.getLessonOrder() == null) {
             int maxOrder = lessonRepository.findMaxLessonOrderByCourseId(courseId).orElse(0);
             po.setLessonOrder(maxOrder + 1);
         }
@@ -109,13 +109,15 @@ public class LessonServiceImpl implements ILessonService {
     public void reorderLessons(Long courseId, List<Long> lessonIds) {
         User currentUser = SecurityUtils.getCurrentUser();
         checkTeacherOrAdmin(currentUser);
+        List<LessonPO> toSave = new java.util.ArrayList<>();
         for (int i = 0; i < lessonIds.size(); i++) {
             Long lessonId = lessonIds.get(i);
             LessonPO po = lessonRepository.findById(lessonId)
                     .filter(l -> l.getDeletedAt() == null)
                     .orElseThrow(() -> new BusinessException(404, "Lesson not found: " + lessonId));
             po.setLessonOrder(i + 1);
-            lessonRepository.save(po);
+            toSave.add(po);
         }
+        lessonRepository.saveAll(toSave);
     }
 }

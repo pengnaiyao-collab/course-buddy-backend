@@ -91,11 +91,16 @@ public class GradeSheetServiceImpl implements IGradeSheetService {
         return total;
     }
 
+    private static final int GRADE_A_THRESHOLD = 90;
+    private static final int GRADE_B_THRESHOLD = 80;
+    private static final int GRADE_C_THRESHOLD = 70;
+    private static final int GRADE_D_THRESHOLD = 60;
+
     private String calculateLetterGrade(int totalScore) {
-        if (totalScore >= 90) return "A";
-        if (totalScore >= 80) return "B";
-        if (totalScore >= 70) return "C";
-        if (totalScore >= 60) return "D";
+        if (totalScore >= GRADE_A_THRESHOLD) return "A";
+        if (totalScore >= GRADE_B_THRESHOLD) return "B";
+        if (totalScore >= GRADE_C_THRESHOLD) return "C";
+        if (totalScore >= GRADE_D_THRESHOLD) return "D";
         return "F";
     }
 }
