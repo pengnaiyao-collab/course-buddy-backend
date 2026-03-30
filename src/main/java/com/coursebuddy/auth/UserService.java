@@ -8,10 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
@@ -22,16 +20,16 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("找不到该用户: " + username));
     }
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new BusinessException(409, "Username already exists");
+            throw new BusinessException(409, "用户名已存在");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException(409, "Email already registered");
+            throw new BusinessException(409, "该邮箱已被注册");
         }
 
         Role role = request.getRole() != null ? request.getRole() : Role.STUDENT;
@@ -54,7 +52,7 @@ public class UserService implements UserDetailsService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("找不到该用户"));
         String token = jwtUtil.generateToken(user);
         return AuthResponse.of(token, user);
     }

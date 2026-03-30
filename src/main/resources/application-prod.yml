@@ -17,6 +17,28 @@ spring:
   flyway:
     enabled: true
 
+ai:
+  enabled: ${AI_ENABLED:true}
+  provider: ${AI_PROVIDER:aliyun-bailian}
+  baseUrl: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+  apiKey: ${AI_API_KEY:}
+  model: ${AI_MODEL:qwen-plus}
+  systemPrompt: ${AI_SYSTEM_PROMPT:你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。}
+  maxTokens: ${AI_MAX_TOKENS:2048}
+  temperature: ${AI_TEMPERATURE:0.7}
+  topP: ${AI_TOP_P:0.8}
+  timeout: ${AI_TIMEOUT:30000}
+  retryCount: ${AI_RETRY_COUNT:3}
+  rateLimitPerMinute: ${AI_RATE_LIMIT_PER_MINUTE:60}
+  cacheTtl: ${AI_CACHE_TTL:3600}
+  enableCache: ${AI_ENABLE_CACHE:true}
+  enableMonitoring: ${AI_ENABLE_MONITORING:true}
+  enableErrorLogging: ${AI_ENABLE_ERROR_LOGGING:true}
+  logRequests: ${AI_LOG_REQUESTS:false}
+  logResponses: ${AI_LOG_RESPONSES:false}
+  maxContextMessages: ${AI_MAX_CONTEXT_MESSAGES:20}
+  maxSourceItems: ${AI_MAX_SOURCE_ITEMS:3}
+
 logging:
   level:
     root: WARN

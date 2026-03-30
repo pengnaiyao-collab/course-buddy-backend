@@ -1,8 +1,8 @@
 package com.coursebuddy;
 
-import com.coursebuddy.auth.JwtUtil;
-import com.coursebuddy.auth.Role;
-import com.coursebuddy.auth.User;
+import com.coursebuddy.common.security.JwtUtil;
+import com.coursebuddy.domain.auth.Role;
+import com.coursebuddy.domain.auth.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

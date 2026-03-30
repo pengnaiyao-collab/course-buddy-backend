@@ -2,11 +2,11 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.auth.User;
 import com.coursebuddy.common.MybatisPlusPageUtils;
-import com.coursebuddy.client.XunFeiSparkClient;
+import com.coursebuddy.client.AIChatClient;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.coursebuddy.config.XunFeiProperties;
+import com.coursebuddy.config.AIProperties;
 import com.coursebuddy.domain.dto.GenerateContentDTO;
 import com.coursebuddy.domain.po.AiUsageStatsPO;
 import com.coursebuddy.domain.po.GeneratedContentPO;
@@ -16,6 +16,11 @@ import com.coursebuddy.mapper.AiUsageStatsMapper;
 import com.coursebuddy.mapper.GeneratedContentMapper;
 import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.service.IContentGeneratorService;
+import com.coursebuddy.util.AIResponseCache;
+import com.coursebuddy.util.RateLimiter;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
 
 @Slf4j
@@ -32,8 +36,10 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class ContentGeneratorServiceImpl implements IContentGeneratorService {
 
-    private final XunFeiSparkClient sparkClient;
-    private final XunFeiProperties properties;
+    private final AIChatClient aiChatClient;
+    private final AIProperties properties;
+    private final AIResponseCache aiResponseCache;
+    private final RateLimiter rateLimiter;
     private final GeneratedContentMapper contentRepository;
     private final AiUsageStatsMapper usageStatsRepository;
     private final KnowledgeItemMapper knowledgeItemRepository;
@@ -112,12 +118,15 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
     @Override
     @Transactional
     public GeneratedContentVO generate(GenerateContentDTO dto) {
+        ensureConfigured();
         User currentUser = SecurityUtils.getCurrentUser();
+        ensureRateLimit(currentUser.getId());
         long startTime = System.currentTimeMillis();
 
         String prompt = buildPrompt(dto);
+        String cacheKey = buildCacheKey(dto);
+        String cachedContent = loadCachedContent(cacheKey);
 
-        // Create pending record
         GeneratedContentPO po = GeneratedContentPO.builder()
                 .userId(currentUser.getId())
                 .contentType(dto.getContentType())
@@ -129,21 +138,32 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
         contentRepository.insert(po);
 
         try {
-            List<Map<String, String>> messages = List.of(Map.of("role", "user", "content", prompt));
-            XunFeiSparkClient.SparkChatResult result = sparkClient.chat(messages, String.valueOf(currentUser.getId()));
+            String finalContent;
+            int promptTokens = 0;
+            int completionTokens = 0;
 
-            String finalContent = result.content();
+            if (cachedContent != null) {
+                finalContent = cachedContent;
+            } else {
+                List<ChatMessage> messages = buildMessages(prompt);
+                AIChatClient.AIChatResult result = aiChatClient.chat(messages);
+                finalContent = result.content();
+                promptTokens = result.promptTokens();
+                completionTokens = result.completionTokens();
+                cacheContent(cacheKey, finalContent);
+            }
+
             if ("LEARNING_PATH".equalsIgnoreCase(dto.getContentType())) {
                 finalContent = appendRecommendedResources(finalContent, dto.getCourseId(), dto.getSubject());
             }
 
             po.setContent(finalContent);
             po.setStatus("COMPLETED");
-            po.setTokenCount(result.totalTokens());
+            po.setTokenCount(promptTokens + completionTokens);
             contentRepository.updateById(po);
 
-            recordUsageStats(currentUser.getId(), dto.getContentType(), result.promptTokens(),
-                    result.completionTokens(), System.currentTimeMillis() - startTime, "SUCCESS", null);
+            recordUsageStats(currentUser.getId(), dto.getContentType(), promptTokens,
+                    completionTokens, System.currentTimeMillis() - startTime, "SUCCESS", null);
 
             return contentMapper.poToVo(po);
 
@@ -268,6 +288,56 @@ public class ContentGeneratorServiceImpl implements IContentGeneratorService {
             case "HARD" -> "难";
             default -> "中等";
         };
+    }
+
+    private void ensureConfigured() {
+        if (!properties.isEnabled()) {
+            throw new BusinessException(503, "AI 服务未启用");
+        }
+        if (properties.getApiKey() == null || properties.getApiKey().isBlank()) {
+            throw new BusinessException(500, "AI 服务尚未配置 API Key");
+        }
+    }
+
+    private void ensureRateLimit(Long userId) {
+        if (!rateLimiter.tryAcquire(userId, properties.getRateLimitPerMinute())) {
+            throw new BusinessException(429, "AI 请求过于频繁，请稍后重试");
+        }
+    }
+
+    private List<ChatMessage> buildMessages(String prompt) {
+        if (properties.getSystemPrompt() == null || properties.getSystemPrompt().isBlank()) {
+            return List.of(UserMessage.from(prompt));
+        }
+        return List.of(
+                SystemMessage.from(properties.getSystemPrompt()),
+                UserMessage.from(prompt)
+        );
+    }
+
+    private String buildCacheKey(GenerateContentDTO dto) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(defaultIfBlank(dto.getContentType(), "UNKNOWN")).append(':');
+        builder.append(defaultIfBlank(dto.getSubject(), "")).append(':');
+        builder.append(defaultIfBlank(dto.getRequirements(), "")).append(':');
+        builder.append(defaultIfBlank(dto.getDifficulty(), "")).append(':');
+        builder.append(dto.getCount() == null ? "" : dto.getCount()).append(':');
+        builder.append(dto.getCourseId() == null ? "" : dto.getCourseId());
+        return aiResponseCache.buildKey(dto.getContentType(), builder.toString());
+    }
+
+    private String loadCachedContent(String cacheKey) {
+        if (!properties.isEnableCache()) {
+            return null;
+        }
+        return aiResponseCache.get(cacheKey);
+    }
+
+    private void cacheContent(String cacheKey, String content) {
+        if (!properties.isEnableCache() || content == null || content.isBlank()) {
+            return;
+        }
+        aiResponseCache.putWithTtlSeconds(cacheKey, content, properties.getCacheTtl());
     }
 
     private void recordUsageStats(Long userId, String requestType,

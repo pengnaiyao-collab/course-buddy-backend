@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class CostCalculator {
 
-    /** 讯飞星火基础版价格（元/1K tokens） */
-    private static final double XUNFEI_PRICE_PER_1K = 0.005;
+    /** 通用模型基础价格（元/1K tokens） */
+    private static final double AI_PRICE_PER_1K = 0.005;
 
     /** 计算单次请求成本（元） */
     public double calculate(int promptTokens, int completionTokens) {
-        return (promptTokens + completionTokens) / 1000.0 * XUNFEI_PRICE_PER_1K;
+        return (promptTokens + completionTokens) / 1000.0 * AI_PRICE_PER_1K;
     }
 
     /** 计算月度成本估算（元） */
@@ -21,7 +21,7 @@ public class CostCalculator {
         long freeQuota = 1_000_000L;
         long monthlyTokens = dailyTokens * 30;
         long billable = Math.max(0, monthlyTokens - freeQuota);
-        return billable / 1000.0 * XUNFEI_PRICE_PER_1K;
+        return billable / 1000.0 * AI_PRICE_PER_1K;
     }
 
     /** 格式化成本字符串 */

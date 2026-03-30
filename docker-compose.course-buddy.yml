@@ -1,0 +1,48 @@
+services:
+  course-mysql:
+    image: mysql:8.0
+    container_name: course-buddy-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=course_buddy
+      - MYSQL_USER=course_buddy_user
+      - MYSQL_PASSWORD=changeme
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./mysql_course/data:/var/lib/mysql
+    networks:
+      - course-app-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: always
+
+  course-redis:
+    image: redis:alpine
+    container_name: course-buddy-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    command: redis-server --requirepass 123456 --appendonly yes
+    networks:
+      - course-app-network
+
+  course-minio:
+    image: minio/minio
+    container_name: course-buddy-minio
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - ./minio_course/data:/data
+    networks:
+      - course-app-network
+    command: server /data --console-address ":9001"
+    restart: always
+
+networks:
+  course-app-network:
+    driver: bridge

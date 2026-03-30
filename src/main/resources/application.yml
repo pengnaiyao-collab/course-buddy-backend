@@ -85,17 +85,17 @@ note:
   share:
     default-ttl-seconds: ${NOTE_SHARE_DEFAULT_TTL:0}
 
-# 讯飞星火配置
-xunfei:
+# AI 配置
+ai:
   enabled: true
-  appId: "${XUNFEI_APP_ID:}"
-  apiKey: "${XUNFEI_API_KEY:}"
-  apiSecret: "${XUNFEI_API_SECRET:}"
-  endpoint: "wss://spark-api.xf-yun.com/v3.5/chat"
-  model: "generalv3.5"
+  provider: "aliyun-bailian"
+  baseUrl: "${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}"
+  apiKey: "${AI_API_KEY:}"
+  model: "${AI_MODEL:qwen-plus}"
+  systemPrompt: "你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。"
   maxTokens: 2048
   temperature: 0.7
-  topK: 4
+  topP: 0.8
   timeout: 30000
   retryCount: 3
   rateLimitPerMinute: 60
@@ -103,3 +103,7 @@ xunfei:
   enableCache: true
   enableMonitoring: true
   enableErrorLogging: true
+  logRequests: false
+  logResponses: false
+  maxContextMessages: 20
+  maxSourceItems: 3
