@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 笔记视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,14 +24,9 @@ public class NoteVO {
     private Long categoryId;
     private String title;
     private String content;
-    /** 笔记摘要/描述。 */
-    private String description;
-    /** 笔记状态：DRAFT、PUBLISHED、ARCHIVED。 */
-    private String status;
     private String category;
-    private String tags;
-    /** 关联标签 ID 列表。 */
-    private List<Long> tagIds;
+    /** 附件链接列表。 */
+    private List<String> attachments;
     /** 是否公开分享。 */
     private Boolean isPublic;
     /** 乐观锁版本号。 */

@@ -1,4 +1,4 @@
--- V15__Governance_Permissions_And_Double_Review.sql
+-- V15：治理权限与双重审核
 
 CREATE TABLE IF NOT EXISTS course_action_permissions (
     id                BIGINT       NOT NULL AUTO_INCREMENT,

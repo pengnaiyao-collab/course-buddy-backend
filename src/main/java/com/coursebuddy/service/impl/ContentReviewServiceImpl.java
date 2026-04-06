@@ -6,11 +6,9 @@ import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.ContentReviewDecisionPO;
 import com.coursebuddy.domain.po.ContentReviewPO;
 import com.coursebuddy.domain.po.FileUploadPO;
-import com.coursebuddy.domain.po.KnowledgeItemPO;
 import com.coursebuddy.mapper.ContentReviewDecisionMapper;
 import com.coursebuddy.mapper.ContentReviewMapper;
 import com.coursebuddy.mapper.FileUploadMapper;
-import com.coursebuddy.mapper.KnowledgeItemMapper;
 import com.coursebuddy.service.IContentReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/**
+ * 内容审核服务实现
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -29,7 +30,6 @@ public class ContentReviewServiceImpl implements IContentReviewService {
 
     private final ContentReviewMapper reviewRepository;
     private final ContentReviewDecisionMapper decisionRepository;
-    private final KnowledgeItemMapper knowledgeItemRepository;
     private final FileUploadMapper fileUploadRepository;
 
     @Override
@@ -68,6 +68,8 @@ public class ContentReviewServiceImpl implements IContentReviewService {
 
         long approvals = decisionRepository.countByReviewIdAndDecision(reviewId, "APPROVE");
         review.setApprovalCount((int) approvals);
+        // 注意：如需多个审核人，建议使用独立的审核人列表表
+        // 当前 reviewerId 与 secondReviewerId 的实现仅支持 2 名审核人
         if (review.getReviewerId() == null) {
             review.setReviewerId(reviewerId);
         } else if (!review.getReviewerId().equals(reviewerId) && review.getSecondReviewerId() == null) {
@@ -170,15 +172,6 @@ public class ContentReviewServiceImpl implements IContentReviewService {
 
     private void applyModeration(ContentReviewPO review, boolean hardRemove) {
         String type = review.getContentType() == null ? "" : review.getContentType().toUpperCase();
-        if ("KNOWLEDGE_ITEM".equals(type) || "KNOWLEDGE".equals(type)) {
-            KnowledgeItemPO item = knowledgeItemRepository.selectById(review.getContentId());
-            if (item == null) {
-                throw new BusinessException(404, "Knowledge item not found");
-            }
-            item.setStatus(hardRemove ? "DELETED" : "TAKEDOWN");
-            knowledgeItemRepository.updateById(item);
-            return;
-        }
         if ("FILE_UPLOAD".equals(type) || "FILE".equals(type)) {
             FileUploadPO file = fileUploadRepository.selectById(review.getContentId());
             if (file == null) {

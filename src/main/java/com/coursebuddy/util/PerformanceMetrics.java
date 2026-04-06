@@ -38,8 +38,8 @@ public class PerformanceMetrics {
     }
 
     private void addLatency(long durationMs) {
-        // CopyOnWriteArrayList is fine for low-write, high-read scenarios;
-        // sliding-window eviction keeps the list bounded.
+        // CopyOnWriteArrayList 适合低写高读场景；
+        // 滑动窗口清理保持列表有界。
         while (latencies.size() >= MAX_LATENCY_SAMPLES) {
             latencies.remove(0);
         }

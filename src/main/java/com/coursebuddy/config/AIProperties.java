@@ -4,6 +4,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+/**
+ * AI配置属性
+ */
 @Data
 @Component
 @ConfigurationProperties(prefix = "ai")
@@ -14,7 +17,7 @@ public class AIProperties {
     private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
     private String apiKey = "";
     private String model = "qwen-plus";
-    private String systemPrompt = "你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。";
+    private String systemPrompt = "你是课伴的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。";
     private int maxTokens = 2048;
     private double temperature = 0.7;
     private Double topP = 0.8;

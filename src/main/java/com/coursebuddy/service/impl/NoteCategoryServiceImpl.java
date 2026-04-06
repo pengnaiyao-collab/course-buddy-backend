@@ -1,6 +1,6 @@
 package com.coursebuddy.service.impl;
 
-import com.coursebuddy.auth.User;
+import com.coursebuddy.domain.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.dto.NoteCategoryDTO;
@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 笔记分类服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class NoteCategoryServiceImpl implements INoteCategoryService {

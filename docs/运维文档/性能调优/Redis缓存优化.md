@@ -1,6 +1,6 @@
 # Redis 缓存优化指南
 
-本文档针对 Course Buddy Backend 的 Redis 7.2 缓存策略、Key 命名规范、过期策略和缓存预热方案进行详细说明。
+本文档针对 课伴 Backend 的 Redis 7.2 缓存策略、Key 命名规范、过期策略和缓存预热方案进行详细说明。
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 1.1 项目缓存使用场景
 
-Course Buddy Backend 在以下场景使用 Redis：
+课伴 Backend 在以下场景使用 Redis：
 
 | 使用场景 | 缓存模式 | 说明 |
 |---------|---------|------|
@@ -30,7 +30,6 @@ Course Buddy Backend 在以下场景使用 Redis：
 | 讯飞 AI 响应缓存 | Cache-Aside | `xunfei.enableCache=true`，相同问题复用答案 |
 | 课程列表缓存 | Cache-Aside | 减少数据库压力 |
 | 用户 Session 信息 | 主动存储 | 快速校验用户角色和权限 |
-| 分享链接有效性 | 主动存储 | 笔记分享链接的 Token 和 TTL |
 | 考勤统计缓存 | Write-Behind | 聚合计算结果缓存 |
 | 验证码 | 主动存储 | 短 TTL，防暴力破解 |
 
@@ -101,11 +100,9 @@ public class RedisCacheConfig {
 | 用户信息缓存 | `cb:user:profile:{userId}` | `cb:user:profile:42` | 30 分钟 |
 | 课程详情 | `cb:course:detail:{courseId}` | `cb:course:detail:7` | 5 分钟 |
 | 课程列表（分页） | `cb:course:list:{page}:{size}:{status}` | `cb:course:list:1:10:ACTIVE` | 10 分钟 |
-| 笔记分享 Token | `cb:note:share:{shareToken}` | `cb:note:share:xyz789` | 自定义 TTL |
 | AI 响应缓存 | `cb:ai:xunfei:{promptHash}` | `cb:ai:xunfei:md5_abc` | 1 小时 |
 | 考勤统计 | `cb:attendance:stats:{courseId}` | `cb:attendance:stats:3` | 1 小时 |
 | 验证码 | `cb:captcha:{sessionId}` | `cb:captcha:session_x` | 5 分钟 |
-| 在线协作 Session | `cb:collab:session:{docId}` | `cb:collab:session:99` | 30 分钟 |
 | 速率限制 | `cb:ratelimit:xunfei:{userId}` | `cb:ratelimit:xunfei:5` | 1 分钟滑动窗口 |
 
 ### 2.3 命名注意事项
@@ -136,7 +133,6 @@ public class RedisCacheConfig {
 | 课程详情 | 5 分钟 | 课程内容可能更新，5 分钟可接受 |
 | 已发布课程列表 | 10 分钟 | 新课程发布延迟可接受 |
 | AI 响应 | 1 小时 | 同一问题答案稳定，复用率高 |
-| 笔记分享链接 | 用户自定义 | 0 = 永不过期；其他 = 指定秒数 |
 | 讯飞速率限制 | 60 秒（滑动窗口） | 与 `rateLimitPerMinute=60` 对应 |
 
 ### 3.2 Redis 过期策略配置
@@ -264,37 +260,7 @@ public boolean checkRateLimit(Long userId) {
 }
 ```
 
-### 4.3 笔记分享模块
 
-```java
-// 创建分享链接
-public String createShareLink(Long noteId, Long ttlSeconds) {
-    String shareToken = UUID.randomUUID().toString().replace("-", "");
-    String key = "cb:note:share:" + shareToken;
-
-    Map<String, Object> shareData = Map.of(
-        "noteId", noteId,
-        "createdAt", System.currentTimeMillis()
-    );
-    redisTemplate.opsForHash().putAll(key, shareData);
-
-    if (ttlSeconds > 0) {
-        redisTemplate.expire(key, Duration.ofSeconds(ttlSeconds));
-    }
-    // ttlSeconds = 0 时永不过期（持久化存储）
-    return shareToken;
-}
-
-// 访问分享链接
-public Note getSharedNote(String shareToken) {
-    String key = "cb:note:share:" + shareToken;
-    Long noteId = (Long) redisTemplate.opsForHash().get(key, "noteId");
-    if (noteId == null) throw new BusinessException("分享链接无效或已过期");
-    return noteMapper.selectById(noteId);
-}
-```
-
----
 
 ## 5. 缓存预热策略
 
@@ -504,7 +470,6 @@ docker exec -it course-buddy-redis redis-cli
 | 单个对象缓存 | String (JSON) | 简单，Spring Cache 默认 |
 | 用户 Session 多字段 | Hash | 可单独更新某个字段 |
 | 速率限制计数 | String (INCR) | 原子操作 |
-| 分享链接（多字段） | Hash | 可存储多个属性 |
 | 在线用户集合 | Set | 去重，支持集合运算 |
 | 排行榜（课程热度） | Sorted Set | 带分数排序 |
 

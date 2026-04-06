@@ -1,6 +1,7 @@
 package com.coursebuddy.common.security;
 
 import com.coursebuddy.service.impl.AuthUserDetailsService;
+import com.coursebuddy.service.ITokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +28,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ITokenService tokenService;
     private final AuthUserDetailsService authUserDetailsService;
 
     /**
@@ -52,6 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String jwt = authHeader.substring(7);
         try {
+            if (!tokenService.validateAccessToken(jwt)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             final String username = jwtUtil.extractUsername(jwt);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = authUserDetailsService.loadUserByUsername(username);

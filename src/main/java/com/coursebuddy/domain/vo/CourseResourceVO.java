@@ -4,6 +4,9 @@ import lombok.Builder;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * 课程资源视图对象
+ */
 @Data
 @Builder
 public class CourseResourceVO {
@@ -16,6 +19,7 @@ public class CourseResourceVO {
     private Long fileSize;
     private Integer downloadCount;
     private Long createdBy;
+    private String uploaderName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -10,6 +10,9 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.Optional;
 
+/**
+ * 课程选课映射器
+ */
 @Mapper
 public interface CourseEnrollmentMapper extends BaseMapper<CourseEnrollmentPO> {
 
@@ -28,8 +31,12 @@ public interface CourseEnrollmentMapper extends BaseMapper<CourseEnrollmentPO> {
     @Select("SELECT * FROM course_enrollments WHERE course_id = #{courseId} AND status = #{status}")
     IPage<CourseEnrollmentPO> findByCourseIdAndStatus(Page<CourseEnrollmentPO> page, @Param("courseId") Long courseId, @Param("status") String status);
 
-    @Select("SELECT COUNT(*) > 0 FROM course_enrollments WHERE course_id = #{courseId} AND user_id = #{userId}")
-    boolean existsByCourseIdAndUserId(@Param("courseId") Long courseId, @Param("userId") Long userId);
+    @Select("SELECT COUNT(*) FROM course_enrollments WHERE course_id = #{courseId} AND user_id = #{userId}")
+    long countByCourseIdAndUserId(@Param("courseId") Long courseId, @Param("userId") Long userId);
+
+    default boolean existsByCourseIdAndUserId(Long courseId, Long userId) {
+        return countByCourseIdAndUserId(courseId, userId) > 0;
+    }
 
     @Select("SELECT COUNT(*) FROM course_enrollments WHERE course_id = #{courseId}")
     long countByCourseId(@Param("courseId") Long courseId);

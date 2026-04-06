@@ -3,16 +3,16 @@ spring:
     name: course-buddy-backend
   datasource:
     url: jdbc:mysql://localhost:3307/course_buddy?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
-    username: course_buddy_user
-    password: changeme
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 5
   data:
     redis:
-      host: localhost
-      port: 6380
-      password: 123456
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:123456}
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -21,7 +21,8 @@ spring:
 # MyBatis-Plus 配置（这个保留）
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: com.coursebuddy.domain.po
+  type-aliases-package: com.coursebuddy.domain.po,com.coursebuddy.domain.auth
+  type-enums-package: com.coursebuddy.domain.auth
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
@@ -41,6 +42,18 @@ server:
   port: 8080
   servlet:
     context-path: /api
+  error:
+    # 禁用 Spring Boot 默认的错误视图，防止 Tomcat 在响应已提交时尝试处理错误
+    include-message: on_param
+    include-stacktrace: never
+    include-exception: false
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
 minio:
   endpoint: http://localhost:9002
@@ -76,8 +89,6 @@ note:
       margin: 50
       body-font-size: 11
       title-font-size: 16
-    markdown:
-      charset: UTF-8
   version:
     max-keep: 0
   share:
@@ -88,12 +99,12 @@ ai:
   provider: "aliyun-bailian"
   baseUrl: "${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}"
   apiKey: "${AI_API_KEY:}"
-  model: "${AI_MODEL:qwen-plus}"
-  systemPrompt: "你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。"
+  model: "${AI_MODEL:qwen-vl-plus}"
+  systemPrompt: "你是课伴的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。"
   maxTokens: 2048
   temperature: 0.7
   topP: 0.8
-  timeout: 30000
+  timeout: 120000
   retryCount: 3
   rateLimitPerMinute: 60
   cacheTtl: 3600

@@ -1,6 +1,6 @@
 # Windows 开发环境搭建指南
 
-本文档详细说明如何在 Windows 系统上搭建 Course Buddy Backend 本地开发环境。
+本文档详细说明如何在 Windows 系统上搭建 课伴 Backend 本地开发环境。
 
 ---
 

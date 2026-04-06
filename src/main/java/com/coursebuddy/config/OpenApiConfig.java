@@ -8,6 +8,9 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 配置
+ */
 @Configuration
 public class OpenApiConfig {
 
@@ -15,11 +18,11 @@ public class OpenApiConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Course Buddy API")
-                        .description("Backend API for the Course Buddy platform")
+                        .title("课伴 API")
+                        .description("课伴平台后端 API")
                         .version("1.0.0")
                         .contact(new Contact()
-                                .name("Course Buddy Team")))
+                                .name("课伴团队")))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
                                 new SecurityScheme()

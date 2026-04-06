@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/**
+ * 作业持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,7 +20,7 @@ public class AssignmentPO {
     private String description;
     private LocalDateTime dueDate;
     @Builder.Default
-    private Integer maxScore = 100;
+    private Double maxScore = 100.0;
     private String attachmentUrl;
     @Builder.Default
     private Boolean isPublished = false;
@@ -25,6 +28,5 @@ public class AssignmentPO {
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
-    @TableLogic
     private LocalDateTime deletedAt;
 }

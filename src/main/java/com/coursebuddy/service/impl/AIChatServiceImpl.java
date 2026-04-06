@@ -1,34 +1,35 @@
 package com.coursebuddy.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.coursebuddy.auth.User;
 import com.coursebuddy.client.AIChatClient;
 import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.config.AIProperties;
 import com.coursebuddy.converter.ConversationConverter;
+import com.coursebuddy.domain.auth.User;
+import com.coursebuddy.domain.dto.ChatImageDTO;
 import com.coursebuddy.domain.dto.ChatRequestDTO;
-import com.coursebuddy.domain.po.AiUsageStatsPO;
 import com.coursebuddy.domain.po.ConversationMessagePO;
 import com.coursebuddy.domain.po.ConversationPO;
-import com.coursebuddy.domain.po.KnowledgeItemPO;
-import com.coursebuddy.domain.vo.AiUsageStatsVO;
+import com.coursebuddy.domain.po.NotePO;
 import com.coursebuddy.domain.vo.ChatMessageVO;
 import com.coursebuddy.domain.vo.ChatResponseVO;
 import com.coursebuddy.domain.vo.ConversationVO;
 import com.coursebuddy.domain.vo.KnowledgeSourceVO;
-import com.coursebuddy.mapper.AiUsageStatsMapper;
 import com.coursebuddy.mapper.ConversationMapper;
 import com.coursebuddy.mapper.ConversationMessageMapper;
-import com.coursebuddy.mapper.KnowledgeItemMapper;
+import com.coursebuddy.mapper.NoteMapper;
 import com.coursebuddy.service.IAIChatService;
 import com.coursebuddy.util.RateLimiter;
+import dev.langchain4j.data.image.Image;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.Content;
+import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,17 +38,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+/**
+ * AI聊天服务实现
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -55,27 +58,11 @@ public class AIChatServiceImpl implements IAIChatService {
 
     private final AIChatClient aiChatClient;
     private final AIProperties properties;
-    private final RateLimiter rateLimiter;
     private final ConversationMapper conversationRepository;
     private final ConversationMessageMapper messageRepository;
-    private final AiUsageStatsMapper usageStatsRepository;
-    private final KnowledgeItemMapper knowledgeItemRepository;
     private final ConversationConverter conversationMapper;
-
-    private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
-
-    @PreDestroy
-    public void shutdownExecutor() {
-        sseExecutor.shutdown();
-        try {
-            if (!sseExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                sseExecutor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            sseExecutor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-    }
+    private final NoteMapper noteRepository;
+    private final RateLimiter rateLimiter;
 
     @Override
     @Transactional
@@ -83,43 +70,37 @@ public class AIChatServiceImpl implements IAIChatService {
         ensureConfigured();
         User currentUser = SecurityUtils.getCurrentUser();
         ensureRateLimit(currentUser.getId());
-        long startTime = System.currentTimeMillis();
 
         ConversationPO conversation = resolveConversation(dto, currentUser.getId());
-        List<KnowledgeItemPO> sourceItems = findRelevantKnowledgeItems(dto);
-        List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
+        List<NotePO> sourceItems = findRelevantNotes(dto, currentUser.getId());
         List<ChatMessage> messages = buildMessageContext(conversation.getId(), dto, sourceItems);
 
         AIChatClient.AIChatResult result;
         try {
             result = aiChatClient.chat(messages);
-        } catch (Exception e) {
-            logModelError("同步对话失败，userId=" + currentUser.getId(), e);
-            recordUsageStats(currentUser.getId(), "CHAT", 0, 0,
-                    System.currentTimeMillis() - startTime, "FAILED", e.getMessage());
-            throw new BusinessException(500, "AI 服务暂时不可用，请稍后重试");
+        } catch (Exception ex) {
+            logModelError("同步对话失败，userId=" + currentUser.getId(), ex);
+            throw new BusinessException(500, "AI 服务调用失败，请稍后重试");
         }
 
-        saveMessage(conversation.getId(), "user", dto.getMessage(), null);
-        saveMessage(conversation.getId(), "assistant", result.content(), null);
+        String answer = defaultIfBlank(result.content(), "");
+        ChatImageDTO image = firstImage(dto);
+        saveMessage(conversation.getId(), "user", dto.getMessage(), result.promptTokens(), image);
+        saveMessage(conversation.getId(), "assistant", answer, result.completionTokens());
         updateConversationTitle(conversation, dto.getMessage());
 
-        recordUsageStats(currentUser.getId(), "CHAT", result.promptTokens(), result.completionTokens(),
-                System.currentTimeMillis() - startTime, "SUCCESS", null);
-
-        List<ChatMessageVO> msgVOs = conversationMapper.messagePoListToVoList(
-                messageRepository.findByConversationIdOrderByCreatedAtAsc(conversation.getId()));
+        List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
+        List<Long> sourceIds = sources.stream()
+                .map(KnowledgeSourceVO::getKnowledgeItemId)
+                .filter(Objects::nonNull)
+                .toList();
 
         return ChatResponseVO.builder()
                 .conversationId(conversation.getId())
                 .title(conversation.getTitle())
-                .answer(result.content())
-                .messages(msgVOs)
+                .answer(answer)
                 .sources(sources)
-                .relatedKnowledgeIds(sources.stream()
-                        .map(KnowledgeSourceVO::getKnowledgeItemId)
-                        .collect(Collectors.toList()))
-                .createdAt(conversation.getCreatedAt())
+                .relatedKnowledgeIds(sourceIds)
                 .build();
     }
 
@@ -128,73 +109,74 @@ public class AIChatServiceImpl implements IAIChatService {
         ensureConfigured();
         User currentUser = SecurityUtils.getCurrentUser();
         ensureRateLimit(currentUser.getId());
-        SseEmitter emitter = new SseEmitter(properties.getTimeout());
+
+        ConversationPO conversation = resolveConversation(dto, currentUser.getId());
+        List<NotePO> sourceItems = findRelevantNotes(dto, currentUser.getId());
+        List<ChatMessage> messages = buildMessageContext(conversation.getId(), dto, sourceItems);
+
+        SseEmitter emitter = new SseEmitter(0L);
         AtomicBoolean emitterCompleted = new AtomicBoolean(false);
+        StringBuilder assistantBuffer = new StringBuilder();
+        ChatImageDTO image = firstImage(dto);
 
-        sseExecutor.submit(() -> {
-            long startTime = System.currentTimeMillis();
-            StringBuilder fullAnswer = new StringBuilder();
+        emitter.onCompletion(() -> emitterCompleted.set(true));
+        emitter.onTimeout(() -> emitterCompleted.set(true));
 
+        CompletableFuture.runAsync(() -> {
             try {
-                ConversationPO conversation = resolveConversation(dto, currentUser.getId());
-                List<KnowledgeItemPO> sourceItems = findRelevantKnowledgeItems(dto);
-                List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
-                List<ChatMessage> messages = buildMessageContext(conversation.getId(), dto, sourceItems);
-                saveMessage(conversation.getId(), "user", dto.getMessage(), null);
-
                 aiChatClient.chatStream(messages, new AIChatClient.AIStreamListener() {
                     @Override
                     public void onToken(String token) {
                         if (emitterCompleted.get()) {
                             return;
                         }
+                        assistantBuffer.append(token);
                         try {
-                            fullAnswer.append(token);
                             emitter.send(SseEmitter.event().data(token));
-                        } catch (IOException e) {
+                        } catch (Exception ex) {
                             emitterCompleted.set(true);
-                            safeCompleteWithError(emitter, e);
-                        } catch (Exception e) {
-                            emitterCompleted.set(true);
+                            safeCompleteWithError(emitter, ex);
                         }
                     }
 
                     @Override
-                    public void onComplete(int promptTokens, int completionTokens) {
-                        if (!emitterCompleted.compareAndSet(false, true)) {
+                    public void onComplete(int promptTokensValue, int completionTokensValue) {
+                        if (emitterCompleted.get()) {
                             return;
                         }
+                        String answer = assistantBuffer.toString();
+                        saveMessage(conversation.getId(), "user", dto.getMessage(), promptTokensValue, image);
+                        saveMessage(conversation.getId(), "assistant", answer, completionTokensValue);
+                        updateConversationTitle(conversation, dto.getMessage());
+
                         try {
-                            saveMessage(conversation.getId(), "assistant", fullAnswer.toString(), null);
-                            updateConversationTitle(conversation, dto.getMessage());
-                            recordUsageStats(currentUser.getId(), "CHAT_STREAM", promptTokens, completionTokens,
-                                    System.currentTimeMillis() - startTime, "SUCCESS", null);
-                            emitter.send(SseEmitter.event()
-                                    .name("done")
-                                    .data(buildDoneEventPayload(conversation.getId(), sources)));
-                        } catch (Exception e) {
-                            logModelError("流式对话完成事件处理失败，userId=" + currentUser.getId(), e);
+                            List<KnowledgeSourceVO> sources = toSourceVOs(sourceItems);
+                            String donePayload = buildDoneEventPayload(conversation.getId(), sources);
+                            emitter.send(SseEmitter.event().name("done").data(donePayload));
+                        } catch (Exception ex) {
+                            logModelError("发送完成事件失败，userId=" + currentUser.getId(), ex);
                         } finally {
+                            emitterCompleted.set(true);
                             safeComplete(emitter);
                         }
                     }
 
                     @Override
                     public void onError(Throwable throwable) {
-                        if (!emitterCompleted.compareAndSet(false, true)) {
+                        if (emitterCompleted.get()) {
                             return;
                         }
-                        recordUsageStats(currentUser.getId(), "CHAT_STREAM", 0, 0,
-                                System.currentTimeMillis() - startTime, "FAILED", throwable.getMessage());
+                        logModelError("流式对话失败，userId=" + currentUser.getId(), throwable);
+                        emitterCompleted.set(true);
                         safeCompleteWithError(emitter, throwable);
                     }
                 });
-            } catch (Exception e) {
-                logModelError("流式对话启动失败，userId=" + currentUser.getId(), e);
+            } catch (Exception ex) {
+                logModelError("流式对话启动失败，userId=" + currentUser.getId(), ex);
                 if (!emitterCompleted.compareAndSet(false, true)) {
                     return;
                 }
-                safeCompleteWithError(emitter, e);
+                safeCompleteWithError(emitter, ex);
             }
         });
 
@@ -256,27 +238,6 @@ public class AIChatServiceImpl implements IAIChatService {
         conversationRepository.deleteById(conversation.getId());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<AiUsageStatsVO> getUsageStats(Pageable pageable) {
-        User currentUser = SecurityUtils.getCurrentUser();
-        IPage<AiUsageStatsPO> poPage = usageStatsRepository.findByUserIdOrderByCreatedAtDesc(
-                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId());
-        return MybatisPlusPageUtils.toSpringPage(poPage, pageable)
-                .map(po -> AiUsageStatsVO.builder()
-                        .id(po.getId())
-                        .userId(po.getUserId())
-                        .model(po.getModel())
-                        .requestType(po.getRequestType())
-                        .promptTokens(po.getPromptTokens())
-                        .completionTokens(po.getCompletionTokens())
-                        .totalTokens(po.getTotalTokens())
-                        .durationMs(po.getDurationMs())
-                        .status(po.getStatus())
-                        .createdAt(po.getCreatedAt())
-                        .build());
-    }
-
     private void ensureConfigured() {
         if (!properties.isEnabled()) {
             throw new BusinessException(503, "AI 服务未启用");
@@ -313,7 +274,7 @@ public class AIChatServiceImpl implements IAIChatService {
         return newConv;
     }
 
-    private List<ChatMessage> buildMessageContext(Long conversationId, ChatRequestDTO dto, List<KnowledgeItemPO> sourceItems) {
+    private List<ChatMessage> buildMessageContext(Long conversationId, ChatRequestDTO dto, List<NotePO> sourceItems) {
         List<ChatMessage> messages = new ArrayList<>();
 
         if (properties.getSystemPrompt() != null && !properties.getSystemPrompt().isBlank()) {
@@ -322,32 +283,122 @@ public class AIChatServiceImpl implements IAIChatService {
 
         if (dto.isIncludeHistory()) {
             List<ConversationMessagePO> history = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
-            int start = Math.max(0, history.size() - properties.getMaxContextMessages());
-            for (int i = start; i < history.size(); i++) {
-                ChatMessage chatMessage = toChatMessage(history.get(i));
-                if (chatMessage != null) {
-                    messages.add(chatMessage);
+            if (history != null && !history.isEmpty()) {
+                int start = Math.max(0, history.size() - properties.getMaxContextMessages());
+                for (int i = start; i < history.size(); i++) {
+                    ChatMessage chatMessage = toChatMessage(history.get(i));
+                    if (chatMessage != null) {
+                        messages.add(chatMessage);
+                    }
                 }
             }
         }
 
-        messages.add(UserMessage.from(mergeMessageWithKnowledge(dto.getMessage(), sourceItems)));
+        messages.add(buildUserMessage(dto, sourceItems));
         return messages;
     }
 
+    private UserMessage buildUserMessage(ChatRequestDTO dto, List<NotePO> sourceItems) {
+        String prompt = mergeMessageWithKnowledge(dto.getMessage(), sourceItems);
+        List<Content> contents = new ArrayList<>();
+        contents.add(TextContent.from(prompt));
+
+        if (dto.getImages() != null && !dto.getImages().isEmpty()) {
+            for (ChatImageDTO image : dto.getImages()) {
+                ImageContent imageContent = toImageContent(image);
+                if (imageContent != null) {
+                    contents.add(imageContent);
+                }
+            }
+        }
+
+        return UserMessage.from(contents);
+    }
+
+    private ImageContent toImageContent(ChatImageDTO image) {
+        if (image == null) {
+            return null;
+        }
+        String base64 = normalizeBase64(image.getBase64Data());
+        if (base64 == null || base64.isBlank()) {
+            return null;
+        }
+        String mimeType = resolveMimeType(image.getMimeType(), image.getBase64Data());
+        Image img = Image.builder()
+                .base64Data(base64)
+                .mimeType(mimeType)
+                .build();
+        return ImageContent.from(img);
+    }
+
+    private String normalizeBase64(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        int base64Index = trimmed.indexOf("base64,");
+        if (base64Index >= 0) {
+            return trimmed.substring(base64Index + 7).replaceAll("\\s", "");
+        }
+        if (trimmed.startsWith("data:") && trimmed.contains(",")) {
+            return trimmed.substring(trimmed.indexOf(',') + 1).replaceAll("\\s", "");
+        }
+        return trimmed.replaceAll("\\s", "");
+    }
+
+    private String resolveMimeType(String explicitMimeType, String rawBase64) {
+        if (explicitMimeType != null && !explicitMimeType.isBlank()) {
+            return explicitMimeType;
+        }
+        if (rawBase64 != null && rawBase64.startsWith("data:") && rawBase64.contains(";base64,")) {
+            String prefix = rawBase64.substring("data:".length(), rawBase64.indexOf(";base64,"));
+            if (!prefix.isBlank()) {
+                return prefix;
+            }
+        }
+        return "image/png";
+    }
+
     private ChatMessage toChatMessage(ConversationMessagePO message) {
-        if (message.getContent() == null || message.getContent().isBlank()) {
+        if ((message.getContent() == null || message.getContent().isBlank())
+                && (message.getImageData() == null || message.getImageData().isBlank())) {
             return null;
         }
         return switch (defaultIfBlank(message.getRole(), "user").toLowerCase(Locale.ROOT)) {
             case "assistant" -> AiMessage.from(message.getContent());
             case "system" -> SystemMessage.from(message.getContent());
-            default -> UserMessage.from(message.getContent());
+            default -> buildUserMessageFromHistory(message);
         };
     }
 
-    private List<KnowledgeItemPO> findRelevantKnowledgeItems(ChatRequestDTO dto) {
-        if (!dto.isIncludeKnowledgeContext() || dto.getCourseId() == null) {
+    private UserMessage buildUserMessageFromHistory(ConversationMessagePO message) {
+        String content = message.getContent();
+        String text = content == null || content.isBlank() ? "请识别这张图片" : content;
+        List<Content> contents = new ArrayList<>();
+        contents.add(TextContent.from(text));
+
+        ImageContent imageContent = toImageContent(message.getImageData(), message.getImageMimeType());
+        if (imageContent != null) {
+            contents.add(imageContent);
+        }
+
+        return UserMessage.from(contents);
+    }
+
+    private ImageContent toImageContent(String base64Data, String mimeType) {
+        String base64 = normalizeBase64(base64Data);
+        if (base64 == null || base64.isBlank()) {
+            return null;
+        }
+        Image img = Image.builder()
+                .base64Data(base64)
+                .mimeType(resolveMimeType(mimeType, base64Data))
+                .build();
+        return ImageContent.from(img);
+    }
+
+    private List<NotePO> findRelevantNotes(ChatRequestDTO dto, Long userId) {
+        if (!dto.isIncludeKnowledgeContext()) {
             return List.of();
         }
         String keyword = dto.getMessage() == null ? "" : dto.getMessage().trim();
@@ -355,58 +406,58 @@ public class AIChatServiceImpl implements IAIChatService {
             return List.of();
         }
 
-        List<KnowledgeItemPO> candidates = knowledgeItemRepository.searchByCourseAndKeyword(dto.getCourseId(), keyword);
+        int fetchSize = Math.max(properties.getMaxSourceItems() * 5, 10);
+        IPage<NotePO> poPage = noteRepository.findByUserIdAndTitleContainingIgnoreCaseAndIsDeletedFalse(
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, fetchSize), userId, keyword);
+        List<NotePO> candidates = poPage.getRecords();
         if (candidates.isEmpty()) {
             return List.of();
         }
 
         String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
         return candidates.stream()
-                .sorted(Comparator.comparingInt((KnowledgeItemPO item) -> relevanceScore(item, lowerKeyword)).reversed())
+                .sorted(Comparator.comparingInt((NotePO note) -> relevanceScore(note, lowerKeyword)).reversed())
                 .limit(properties.getMaxSourceItems())
                 .toList();
     }
 
-    private int relevanceScore(KnowledgeItemPO item, String lowerKeyword) {
+    private int relevanceScore(NotePO note, String lowerKeyword) {
         int score = 0;
-        if (item.getTitle() != null && item.getTitle().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
+        if (note.getTitle() != null && note.getTitle().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
             score += 4;
         }
-        if (item.getTags() != null && item.getTags().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
-            score += 3;
-        }
-        if (item.getDescription() != null && item.getDescription().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
-            score += 2;
-        }
-        if (item.getContent() != null && item.getContent().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
+        if (note.getContent() != null && note.getContent().toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
             score += 1;
         }
         return score;
     }
 
-    private List<KnowledgeSourceVO> toSourceVOs(List<KnowledgeItemPO> sourceItems) {
+    private List<KnowledgeSourceVO> toSourceVOs(List<NotePO> sourceItems) {
+        if (sourceItems == null || sourceItems.isEmpty()) {
+            return Collections.emptyList();
+        }
         return sourceItems.stream()
                 .map(item -> KnowledgeSourceVO.builder()
                         .knowledgeItemId(item.getId())
                         .title(item.getTitle())
-                        .snippet(shortenSnippet(item.getContent() != null ? item.getContent() : item.getDescription(), 180))
-                        .sourceType(item.getSourceType())
+                        .snippet(shortenSnippet(item.getContent(), 180))
+                        .sourceType("NOTE")
                         .build())
                 .toList();
     }
 
-    private String mergeMessageWithKnowledge(String originalMessage, List<KnowledgeItemPO> sourceItems) {
+    private String mergeMessageWithKnowledge(String originalMessage, List<NotePO> sourceItems) {
         if (sourceItems.isEmpty()) {
             return originalMessage;
         }
         StringBuilder builder = new StringBuilder();
-        builder.append("请优先基于课程知识库回答，回答末尾给出你使用的知识条目编号，例如 [K12]。\n");
+        builder.append("请优先基于个人知识库（笔记）回答，回答末尾给出你使用的笔记编号，例如 [N12]。\n");
         builder.append("知识库上下文：\n");
-        for (KnowledgeItemPO item : sourceItems) {
-            builder.append("[K").append(item.getId()).append("] ")
+        for (NotePO item : sourceItems) {
+            builder.append("[N").append(item.getId()).append("] ")
                     .append(defaultIfBlank(item.getTitle(), "Untitled"))
                     .append("\n")
-                    .append(shortenSnippet(item.getContent() != null ? item.getContent() : item.getDescription(), 280))
+                    .append(shortenSnippet(item.getContent(), 280))
                     .append("\n");
         }
         builder.append("用户问题：").append(originalMessage);
@@ -438,12 +489,23 @@ public class AIChatServiceImpl implements IAIChatService {
     }
 
     private void saveMessage(Long conversationId, String role, String content, Integer tokenCount) {
+        saveMessage(conversationId, role, content, tokenCount, null);
+    }
+
+    private void saveMessage(Long conversationId, String role, String content, Integer tokenCount, ChatImageDTO image) {
         ConversationMessagePO message = ConversationMessagePO.builder()
                 .conversationId(conversationId)
                 .role(role)
                 .content(content)
                 .tokenCount(tokenCount)
                 .build();
+
+        if (image != null) {
+            message.setImageData(normalizeBase64(image.getBase64Data()));
+            message.setImageMimeType(resolveMimeType(image.getMimeType(), image.getBase64Data()));
+            message.setImageName(image.getFileName());
+        }
+
         messageRepository.insert(message);
     }
 
@@ -480,27 +542,10 @@ public class AIChatServiceImpl implements IAIChatService {
         }
     }
 
-    private void recordUsageStats(Long userId, String requestType,
-                                  int promptTokens, int completionTokens,
-                                  long durationMs, String status, String errorMessage) {
-        if (!properties.isEnableMonitoring()) {
-            return;
+    private ChatImageDTO firstImage(ChatRequestDTO dto) {
+        if (dto.getImages() == null || dto.getImages().isEmpty()) {
+            return null;
         }
-        try {
-            AiUsageStatsPO stats = AiUsageStatsPO.builder()
-                    .userId(userId)
-                    .model(properties.getModel())
-                    .requestType(requestType)
-                    .promptTokens(promptTokens)
-                    .completionTokens(completionTokens)
-                    .totalTokens(promptTokens + completionTokens)
-                    .durationMs(durationMs)
-                    .status(status)
-                    .errorMessage(errorMessage)
-                    .build();
-            usageStatsRepository.insert(stats);
-        } catch (Exception e) {
-            log.warn("Failed to record AI usage stats", e);
-        }
+        return dto.getImages().get(0);
     }
 }

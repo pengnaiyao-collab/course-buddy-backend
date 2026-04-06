@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 笔记持久化对象。
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("notes")
+@TableName(value = "notes", autoResultMap = true)
 public class NotePO {
 
     @TableId(type = IdType.AUTO)
@@ -36,14 +37,12 @@ public class NotePO {
     private String title;
     private String content;
 
-    /** 笔记摘要/描述（可选）。 */
-    private String description;
-
-    /** 笔记状态：DRAFT（草稿）、PUBLISHED（已发布）、ARCHIVED（已归档）。 */
-    @Builder.Default
-    private String status = "DRAFT";
     private String category;
-    private String tags;
+    
+    /** 附件 URL 列表（JSON 格式）。 */
+    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
+    private List<String> attachments;
+    
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

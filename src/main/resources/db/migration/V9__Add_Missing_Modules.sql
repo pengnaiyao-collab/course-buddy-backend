@@ -1,15 +1,15 @@
--- V9: Add missing modules: course enrollment, learning progress, discussions,
---     notifications, teams, note categories, note sharing, user profile extensions
+-- V9：补齐缺失模块：选课、学习进度、讨论、
+--     通知、团队、笔记分类、笔记分享、用户资料扩展
 
 -- ============================================================
--- 1. User profile extensions
+-- 1. 用户资料扩展
 -- ============================================================
 ALTER TABLE users
     ADD COLUMN bio          TEXT           COMMENT '个人简介',
     ADD COLUMN avatar_url   VARCHAR(512)   COMMENT '头像URL';
 
 -- ============================================================
--- 2. User settings
+-- 2. 用户设置
 -- ============================================================
 CREATE TABLE IF NOT EXISTS user_settings (
     id                  BIGINT       NOT NULL AUTO_INCREMENT,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户设置表';
 
 -- ============================================================
--- 3. Course enrollments
+-- 3. 课程选课
 -- ============================================================
 CREATE TABLE IF NOT EXISTS course_enrollments (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS course_enrollments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='选课记录表';
 
 -- ============================================================
--- 4. Learning progress
+-- 4. 学习进度
 -- ============================================================
 CREATE TABLE IF NOT EXISTS learning_progress (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS learning_progress (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='学习进度表';
 
 -- ============================================================
--- 5. Course discussions
+-- 5. 课程讨论
 -- ============================================================
 CREATE TABLE IF NOT EXISTS course_discussions (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS course_discussions (
     CONSTRAINT fk_discussion_author  FOREIGN KEY (author_id) REFERENCES users   (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='课程讨论表';
 
--- Discussion likes
+-- 讨论点赞
 CREATE TABLE IF NOT EXISTS discussion_likes (
     id              BIGINT   NOT NULL AUTO_INCREMENT,
     discussion_id   BIGINT   NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS discussion_likes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='讨论点赞表';
 
 -- ============================================================
--- 6. Notifications
+-- 6. 通知
 -- ============================================================
 CREATE TABLE IF NOT EXISTS notifications (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知表';
 
 -- ============================================================
--- 7. Messages (private chat)
+-- 7. 消息（私聊）
 -- ============================================================
 CREATE TABLE IF NOT EXISTS messages (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS messages (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='私信消息表';
 
 -- ============================================================
--- 8. Teams
+-- 8. 团队
 -- ============================================================
 CREATE TABLE IF NOT EXISTS teams (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS teams (
     CONSTRAINT fk_team_owner FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团队表';
 
--- Team members
+-- 团队成员
 CREATE TABLE IF NOT EXISTS team_members (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
     team_id         BIGINT      NOT NULL,
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS team_members (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='团队成员表';
 
 -- ============================================================
--- 9. Note categories
+-- 9. 笔记分类
 -- ============================================================
 CREATE TABLE IF NOT EXISTS note_categories (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -196,7 +196,7 @@ CREATE TABLE IF NOT EXISTS note_categories (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记分类表';
 
 -- ============================================================
--- 10. Note tags
+-- 10. 笔记标签
 -- ============================================================
 CREATE TABLE IF NOT EXISTS note_tags (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS note_tags (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记标签表';
 
 -- ============================================================
--- 11. Note shares
+-- 11. 笔记分享
 -- ============================================================
 CREATE TABLE IF NOT EXISTS note_shares (
     id              BIGINT       NOT NULL AUTO_INCREMENT,
@@ -233,7 +233,7 @@ CREATE TABLE IF NOT EXISTS note_shares (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记分享表';
 
 -- ============================================================
--- 12. Note versions
+-- 12. 笔记版本
 -- ============================================================
 CREATE TABLE IF NOT EXISTS note_versions (
     id              BIGINT   NOT NULL AUTO_INCREMENT,

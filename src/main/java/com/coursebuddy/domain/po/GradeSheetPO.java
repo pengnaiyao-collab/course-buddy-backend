@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/**
+ * 成绩成绩单持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

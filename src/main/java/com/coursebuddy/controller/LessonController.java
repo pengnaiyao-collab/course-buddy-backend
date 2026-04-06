@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 课时控制器
+ */
 @Tag(name = "Lessons", description = "Course lesson management endpoints")
 @RestController
 @RequestMapping("/v1/lessons")

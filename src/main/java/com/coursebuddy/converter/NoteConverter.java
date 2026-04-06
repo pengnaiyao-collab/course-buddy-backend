@@ -3,26 +3,40 @@ package com.coursebuddy.converter;
 import com.coursebuddy.domain.dto.NoteDTO;
 import com.coursebuddy.domain.po.NotePO;
 import com.coursebuddy.domain.vo.NoteVO;
+import com.coursebuddy.common.exception.BusinessException;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 笔记转换器
+ */
 @Component
 public class NoteConverter {
 
     public NotePO dtoToPo(NoteDTO dto) {
         if (dto == null) return null;
+        
+        // 校验必填字段
+        if (dto.getTitle() == null || dto.getTitle().trim().isEmpty()) {
+            throw new BusinessException(400, "Note title cannot be empty");
+        }
+        if (dto.getTitle().length() > 255) {
+            throw new BusinessException(400, "Note title cannot exceed 255 characters");
+        }
+        if (dto.getContent() != null && dto.getContent().length() > 1000000) {
+            throw new BusinessException(400, "Note content is too large (max 1MB)");
+        }
+        
         return NotePO.builder()
                 .courseId(dto.getCourseId())
                 .categoryId(dto.getCategoryId())
-                .title(dto.getTitle())
-                .content(dto.getContent())
-                .description(dto.getDescription())
-                .status(dto.getStatus() != null ? dto.getStatus() : "DRAFT")
+                .title(dto.getTitle().trim())
+                .content(dto.getContent() != null ? dto.getContent() : "")
                 .category(dto.getCategory())
-                .tags(dto.getTags())
+            .attachments(dto.getAttachments())
                 .isPublic(dto.getIsPublic() != null ? dto.getIsPublic() : false)
                 .build();
     }
@@ -36,10 +50,8 @@ public class NoteConverter {
                 .categoryId(po.getCategoryId())
                 .title(po.getTitle())
                 .content(po.getContent())
-                .description(po.getDescription())
-                .status(po.getStatus())
                 .category(po.getCategory())
-                .tags(po.getTags())
+                .attachments(po.getAttachments())
                 .isPublic(po.getIsPublic())
                 .version(po.getOptLockVersion())
                 .createdAt(po.getCreatedAt())

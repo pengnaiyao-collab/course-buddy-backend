@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 笔记版本转换器
+ */
 @Component
 public class NoteVersionConverter {
 

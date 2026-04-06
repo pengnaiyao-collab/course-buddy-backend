@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 作业提交转换器
+ */
 @Component
 public class AssignmentSubmissionConverter {
 

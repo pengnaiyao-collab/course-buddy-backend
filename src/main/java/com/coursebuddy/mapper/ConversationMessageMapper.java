@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
+/**
+ * 会话消息映射器
+ */
 @Mapper
 public interface ConversationMessageMapper extends BaseMapper<ConversationMessagePO> {
 

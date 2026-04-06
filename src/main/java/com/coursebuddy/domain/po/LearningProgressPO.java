@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 进度持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

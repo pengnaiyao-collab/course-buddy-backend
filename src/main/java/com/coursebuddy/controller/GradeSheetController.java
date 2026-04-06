@@ -14,6 +14,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 成绩成绩单控制器
+ */
 @Tag(name = "Grade Sheets", description = "Grade sheet management endpoints")
 @RestController
 @RequestMapping("/v1/grades")
@@ -24,7 +27,7 @@ public class GradeSheetController {
 
     @Operation(summary = "List course grades", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/courses/{courseId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TA')")
     public ApiResponse<Page<GradeSheetVO>> listCourseGrades(
             @PathVariable Long courseId,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -39,7 +42,7 @@ public class GradeSheetController {
 
     @Operation(summary = "Update grade sheet for a student", security = @SecurityRequirement(name = "bearerAuth"))
     @PutMapping("/courses/{courseId}/students/{studentId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TA')")
     public ApiResponse<GradeSheetVO> updateGradeSheet(
             @PathVariable Long courseId,
             @PathVariable Long studentId,

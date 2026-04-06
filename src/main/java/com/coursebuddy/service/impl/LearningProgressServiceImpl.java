@@ -1,6 +1,6 @@
 package com.coursebuddy.service.impl;
 
-import com.coursebuddy.auth.User;
+import com.coursebuddy.domain.auth.User;
 import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 进度服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class LearningProgressServiceImpl implements ILearningProgressService {

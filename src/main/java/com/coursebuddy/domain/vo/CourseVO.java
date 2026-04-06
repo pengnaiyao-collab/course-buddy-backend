@@ -5,6 +5,9 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 课程视图对象
+ */
 @Data
 @Builder
 public class CourseVO {
@@ -28,4 +31,5 @@ public class CourseVO {
     private LocalDate endDate;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean enrolled;
 }

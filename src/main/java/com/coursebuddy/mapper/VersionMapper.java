@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 版本映射器
+ */
 @Mapper
 public interface VersionMapper extends BaseMapper<VersionPO> {
 

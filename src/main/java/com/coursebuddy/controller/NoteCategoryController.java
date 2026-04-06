@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 笔记分类控制器
+ */
 @Tag(name = "Note Categories", description = "Note category management endpoints")
 @RestController
 @RequestMapping("/notes/categories")

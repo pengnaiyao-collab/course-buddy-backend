@@ -10,6 +10,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 会话转换器
+ */
 @Component
 public class ConversationConverter {
 
@@ -37,6 +40,9 @@ public class ConversationConverter {
                 .conversationId(po.getConversationId())
                 .role(po.getRole())
                 .content(po.getContent())
+                .imageData(po.getImageData())
+                .imageMimeType(po.getImageMimeType())
+                .imageName(po.getImageName())
                 .tokenCount(po.getTokenCount())
                 .createdAt(po.getCreatedAt())
                 .build();

@@ -6,6 +6,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * 聊天请求传输对象
+ */
 @Data
 public class ChatRequestDTO {
 
@@ -27,4 +30,8 @@ public class ChatRequestDTO {
 
     /** 是否启用知识库增强（默认启用） */
     private boolean includeKnowledgeContext = true;
+
+    /** 可选图片列表（base64） */
+    @Valid
+    private List<ChatImageDTO> images;
 }

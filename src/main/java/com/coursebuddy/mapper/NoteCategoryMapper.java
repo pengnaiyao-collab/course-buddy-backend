@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 笔记分类映射器
+ */
 @Mapper
 public interface NoteCategoryMapper extends BaseMapper<NoteCategoryPO> {
 

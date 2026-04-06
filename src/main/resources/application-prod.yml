@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_NAME:course_buddy}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${DB_USER:course_buddy_user}
-    password: ${DB_PASSWORD:changeme}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -23,7 +23,7 @@ ai:
   baseUrl: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   apiKey: ${AI_API_KEY:}
   model: ${AI_MODEL:qwen-plus}
-  systemPrompt: ${AI_SYSTEM_PROMPT:你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。}
+  systemPrompt: ${AI_SYSTEM_PROMPT:你是课伴的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。}
   maxTokens: ${AI_MAX_TOKENS:2048}
   temperature: ${AI_TEMPERATURE:0.7}
   topP: ${AI_TOP_P:0.8}
@@ -45,3 +45,7 @@ logging:
     com.coursebuddy: INFO
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

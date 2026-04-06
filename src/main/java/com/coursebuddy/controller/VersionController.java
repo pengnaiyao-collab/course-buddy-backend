@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 版本控制器
+ */
 @Tag(name = "Version Management", description = "版本管理与历史对比接口")
 @RestController
 @RequestMapping("/v1/versions")

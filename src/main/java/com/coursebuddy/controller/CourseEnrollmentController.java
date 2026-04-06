@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * 课程选课控制器
+ */
 @Tag(name = "Course Enrollment", description = "Course enrollment management endpoints")
 @RestController
 @RequestMapping("/enrollments")
@@ -30,6 +33,13 @@ public class CourseEnrollmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CourseEnrollmentVO> enroll(@Valid @RequestBody CourseEnrollmentDTO dto) {
         return ApiResponse.success("Enrolled successfully", service.enroll(dto));
+    }
+
+    @Operation(summary = "Enroll in a course by code", security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/join")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<CourseEnrollmentVO> joinCourse(@RequestParam String code) {
+        return ApiResponse.success("成功加入课堂", service.enrollByCode(code));
     }
 
     @Operation(summary = "Drop a course", security = @SecurityRequirement(name = "bearerAuth"))

@@ -5,6 +5,9 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 考勤视图对象
+ */
 @Data
 @Builder
 public class AttendanceVO {

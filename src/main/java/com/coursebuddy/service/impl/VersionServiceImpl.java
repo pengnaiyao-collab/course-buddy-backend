@@ -1,6 +1,6 @@
 package com.coursebuddy.service.impl;
 
-import com.coursebuddy.auth.User;
+import com.coursebuddy.domain.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.VersionPO;
@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 版本服务实现
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

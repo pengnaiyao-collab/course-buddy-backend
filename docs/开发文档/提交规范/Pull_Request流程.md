@@ -1,6 +1,6 @@
 # Pull Request 流程
 
-本文档描述 Course Buddy Backend 项目的 Pull Request（PR）创建、审查和合并流程。
+本文档描述 课伴 Backend 项目的 Pull Request（PR）创建、审查和合并流程。
 
 ---
 

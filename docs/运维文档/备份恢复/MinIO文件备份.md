@@ -1,6 +1,6 @@
 # MinIO 文件备份指南
 
-本文档针对 Course Buddy Backend 使用的 MinIO 8.6.0 对象存储，提供备份策略、mc 客户端操作、存储生命周期管理和灾难恢复方案。
+本文档针对 课伴 Backend 使用的 MinIO 8.6.0 对象存储，提供备份策略、mc 客户端操作、存储生命周期管理和灾难恢复方案。
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 1. MinIO 存储概览
 
-### 1.1 Course Buddy 存储结构
+### 1.1 课伴 存储结构
 
 ```yaml
 # application.yml 中的 MinIO 配置
@@ -34,25 +34,17 @@ minio:
 
 **Bucket 名称**：`course-buddy`
 
-**文件分类**（来自 V13 迁移 `Add_Course_Module_Tables`）：
+**文件分类说明**：
 
-| 文件类型 | 存储路径前缀 | 说明 |
-|---------|------------|------|
-| 课程封面图 | `courses/covers/` | 课程封面图片，JPEG/PNG，< 5MB |
-| 课程资源 | `courses/resources/{courseId}/` | 课件、PDF、视频等 |
-| 笔记附件 | `notes/attachments/{userId}/` | 笔记中上传的图片和文件 |
-| 作业附件 | `assignments/{assignmentId}/` | 作业题目附件 |
-| 提交文件 | `submissions/{submissionId}/` | 学生提交的作业文件 |
-| OCR 图片 | `ocr/images/{userId}/` | OCR 识别的上传图片 |
-| 用户头像 | `users/avatars/` | 用户头像 |
-| 知识库资源 | `knowledge/{baseId}/` | 知识库附件（V14 新增） |
+- 实际对象名统一以 `uploads/` 为前缀（例如 `uploads/2024/01/15/uuid/file.pdf`）
+- 业务分类通过 `file_uploads.category` 字段区分（如 `course-resource`、`assignment`、`avatar` 等）
 
 ### 1.2 文件上传方式
 
-Course Buddy 使用分块上传（支持最大 1 GB 文件）：
-1. `POST /api/upload/init` - 初始化分块上传，获取 `uploadId`
-2. `POST /api/upload/chunk` - 上传各个分块
-3. `POST /api/upload/complete` - 合并分块，完成上传
+课伴 使用分块上传（支持最大 1 GB 文件）：
+1. `POST /api/v1/files/upload/init` - 初始化分块上传
+2. `POST /api/v1/files/upload/chunk` - 上传分片
+3. `POST /api/v1/files/upload/merge` - 合并分片
 
 ### 1.3 存储规模估算
 
@@ -61,8 +53,7 @@ Course Buddy 使用分块上传（支持最大 1 GB 文件）：
 | 课程资源 | 50 MB | 5000 个 | 250 GB |
 | 作业提交 | 5 MB | 50000 个 | 250 GB |
 | 笔记附件 | 2 MB | 20000 个 | 40 GB |
-| OCR 图片 | 1 MB | 10000 个 | 10 GB |
-| **合计** | | | **~550 GB** |
+| **合计** | | | **~540 GB** |
 
 ---
 
@@ -87,7 +78,7 @@ docker run --rm -it --network course-buddy-network \
 ### 2.2 配置 mc 连接
 
 ```bash
-# 添加 Course Buddy MinIO 实例别名
+# 添加 课伴 MinIO 实例别名
 mc alias set coursebuddy \
   http://localhost:9000 \
   "${MINIO_ACCESS_KEY:-minioadmin}" \
@@ -101,7 +92,7 @@ mc ls coursebuddy
 
 # 列出 course-buddy bucket 中的文件
 mc ls coursebuddy/course-buddy/
-mc ls --recursive coursebuddy/course-buddy/courses/
+mc ls --recursive coursebuddy/course-buddy/uploads/
 ```
 
 ### 2.3 配置备份目标（第二个 MinIO 或云存储）
@@ -241,15 +232,11 @@ echo "日志：/opt/backups/course-buddy/minio/watch.log"
 
 ```bash
 #!/bin/bash
-# 只备份关键数据（课程资源和作业提交）
+# 只备份关键数据（上传文件）
 
 mc cp --recursive \
-  coursebuddy/course-buddy/courses/ \
-  coursebuddy-backup/course-buddy-backup/courses/
-
-mc cp --recursive \
-  coursebuddy/course-buddy/submissions/ \
-  coursebuddy-backup/course-buddy-backup/submissions/
+  coursebuddy/course-buddy/uploads/ \
+  coursebuddy-backup/course-buddy-backup/uploads/
 
 echo "关键数据备份完成"
 ```
@@ -276,20 +263,10 @@ cat > /tmp/lifecycle.json << 'EOF'
       }
     },
     {
-      "ID": "expire-ocr-images",
+      "ID": "archive-old-uploads",
       "Status": "Enabled",
       "Filter": {
-        "Prefix": "ocr/images/"
-      },
-      "Expiration": {
-        "Days": 90
-      }
-    },
-    {
-      "ID": "archive-old-submissions",
-      "Status": "Enabled",
-      "Filter": {
-        "Prefix": "submissions/"
+        "Prefix": "uploads/"
       },
       "Transition": {
         "Days": 180,
@@ -312,9 +289,7 @@ mc ilm ls coursebuddy/course-buddy
 | 规则 | 前缀 | 策略 | 原因 |
 |------|------|------|------|
 | 清理临时上传 | `temp/` | 1 天后删除 | 分块上传失败留下的碎片 |
-| 清理 OCR 图片 | `ocr/images/` | 90 天后删除 | OCR 识别后图片不再需要长期保留 |
-| 归档旧提交 | `submissions/` | 180 天后转冷存储 | 降低存储成本 |
-| 清理课程缩略图 | `courses/thumbs/` | 30 天后重新生成 | 避免旧缩略图占用空间 |
+| 归档旧文件 | `uploads/` | 180 天后转冷存储 | 降低存储成本 |
 
 ### 5.3 清理分块上传残留
 
@@ -340,7 +315,7 @@ mc du coursebuddy/course-buddy
 
 # 按前缀分析存储分布
 echo "=== 存储分布分析 ==="
-for prefix in courses notes submissions assignments ocr users knowledge; do
+for prefix in uploads; do
     SIZE=$(mc du "coursebuddy/course-buddy/${prefix}/" 2>/dev/null | tail -1 | awk '{print $1}')
     echo "  ${prefix}/: ${SIZE:-0}"
 done

@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+/**
+ * 初始化上传请求
+ */
 @Data
 public class InitUploadRequest {
 

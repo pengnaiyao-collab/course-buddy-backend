@@ -1,5 +1,5 @@
--- V4__Add_Auth_Fields_And_Tokens.sql
--- Adds new auth-related columns to the users table and creates the tokens table
+-- V4：新增认证字段与 tokens 表
+-- 为 users 表新增认证相关字段并创建 tokens 表
 
 ALTER TABLE users
     ADD COLUMN real_name     VARCHAR(50),

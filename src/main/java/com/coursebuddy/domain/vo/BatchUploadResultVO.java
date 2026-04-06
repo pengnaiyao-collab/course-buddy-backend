@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 批量上传视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

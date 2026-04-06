@@ -15,6 +15,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 笔记控制器
+ */
 @Tag(name = "Notes", description = "Notes management endpoints")
 @RestController
 @RequestMapping("/notes")
@@ -59,11 +62,4 @@ public class NoteController {
         return ApiResponse.success(null);
     }
 
-    @Operation(summary = "Search notes by keyword", security = @SecurityRequirement(name = "bearerAuth"))
-    @GetMapping("/search")
-    public ApiResponse<Page<NoteVO>> search(
-            @RequestParam String keyword,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(service.search(keyword, pageable));
-    }
 }

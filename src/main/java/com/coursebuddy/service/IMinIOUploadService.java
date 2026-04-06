@@ -10,6 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 
+/**
+ * 上传服务
+ */
 public interface IMinIOUploadService {
 
     InitUploadResponse initUpload(InitUploadRequest request);
@@ -29,8 +32,8 @@ public interface IMinIOUploadService {
     String getPreviewUrl(String objectName) throws Exception;
 
     /**
-     * Upload multiple files at once. Each file is uploaded as a separate object.
-     * Returns a summary of successes and failures.
+     * 批量上传多个文件，每个文件作为独立对象存储。
+     * 返回成功与失败的汇总结果。
      */
     BatchUploadResultVO batchUpload(MultipartFile[] files, String category);
 }

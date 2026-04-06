@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimiter {
 
-    private static final long WINDOW_MS = 60_000L; // 1 minute window
+    private static final long WINDOW_MS = 60_000L; // 1 分钟窗口
 
     private record UserBucket(AtomicInteger count, long windowStart) {}
 
@@ -30,21 +30,23 @@ public class RateLimiter {
      */
     public boolean tryAcquire(Long userId, int limitPerMin) {
         long now = Instant.now().toEpochMilli();
+        
         UserBucket bucket = buckets.compute(userId, (id, existing) -> {
             if (existing == null || now - existing.windowStart() >= WINDOW_MS) {
-                AtomicInteger counter = new AtomicInteger(0);
+                AtomicInteger counter = new AtomicInteger(1);
                 return new UserBucket(counter, now);
+            }
+            
+            int current = existing.count().incrementAndGet();
+            if (current > limitPerMin) {
+                existing.count().decrementAndGet();
+                log.warn("Rate limit exceeded for user {}: {}/{} req/min", userId, current - 1, limitPerMin);
+                return null; // 标记为失败
             }
             return existing;
         });
-
-        int current = bucket.count().incrementAndGet();
-        if (current > limitPerMin) {
-            bucket.count().decrementAndGet();
-            log.warn("Rate limit exceeded for user {}: {}/{} req/min", userId, current - 1, limitPerMin);
-            return false;
-        }
-        return true;
+        
+        return bucket != null;
     }
 
     /** 获取用户当前窗口内的请求次数 */

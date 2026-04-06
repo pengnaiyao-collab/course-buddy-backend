@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 内容审核决策映射器
+ */
 @Mapper
 public interface ContentReviewDecisionMapper extends BaseMapper<ContentReviewDecisionPO> {
 

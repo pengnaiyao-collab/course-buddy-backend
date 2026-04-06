@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 文件上传响应
+ */
 @Data
 @Builder
 @NoArgsConstructor

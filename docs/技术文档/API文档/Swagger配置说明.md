@@ -1,6 +1,6 @@
 # Swagger / OpenAPI 配置说明
 
-本文档说明 Course Buddy Backend 的 Swagger UI 和 OpenAPI 文档的访问方式、配置说明及使用技巧。
+本文档说明 课伴 Backend 的 Swagger UI 和 OpenAPI 文档的访问方式、配置说明及使用技巧。
 
 ---
 
@@ -117,7 +117,7 @@ public class LoginRequest {
 
 ## 在 Swagger UI 中测试需要认证的接口
 
-Course Buddy Backend 使用 JWT Bearer Token 认证。在 Swagger UI 中测试受保护的接口，需要先获取 Token 并配置。
+课伴 Backend 使用 JWT Bearer Token 认证。在 Swagger UI 中测试受保护的接口，需要先获取 Token 并配置。
 
 ### 步骤
 
@@ -160,11 +160,11 @@ public class SwaggerConfig {
     public OpenAPI courseBuddyOpenAPI() {
         return new OpenAPI()
             .info(new Info()
-                .title("Course Buddy Backend API")
+                .title("课伴 Backend API")
                 .description("课程伙伴平台后端接口文档")
                 .version("v1.0.0")
                 .contact(new Contact()
-                    .name("Course Buddy Team")
+                    .name("课伴 Team")
                     .email("dev@coursebuddy.example.com")))
             .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
             .components(new Components()

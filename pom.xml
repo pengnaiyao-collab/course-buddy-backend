@@ -15,7 +15,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>course-buddy-backend</name>
-    <description>Course Buddy Backend Service</description>
+    <description>课伴 Backend Service</description>
 
     <properties>
         <java.version>17</java.version>
@@ -172,13 +172,6 @@
             <groupId>org.apache.tika</groupId>
             <artifactId>tika-core</artifactId>
             <version>3.2.2</version>
-        </dependency>
-
-        <!-- Tess4j (OCR) -->
-        <dependency>
-            <groupId>net.sourceforge.tess4j</groupId>
-            <artifactId>tess4j</artifactId>
-            <version>5.11.0</version>
         </dependency>
 
         <!-- Test -->

@@ -6,14 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method for audit logging. The aspect will record entity type, action,
- * and operator information to the audit_logs table.
+ * 标记方法用于审计日志记录，切面会将实体类型、动作和操作者信息写入 audit_logs 表。
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AuditLog {
-    /** Type of entity being operated on, e.g. "KnowledgeItem" */
+    /** 操作的实体类型，例如 "KnowledgeItem" */
     String entityType() default "";
-    /** Description of the action, e.g. "CREATE", "UPDATE", "DELETE" */
+    /** 动作描述，例如 "CREATE"、"UPDATE"、"DELETE" */
     String action();
 }

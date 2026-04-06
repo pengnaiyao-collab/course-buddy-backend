@@ -11,6 +11,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 上传
+ */
 @Component
 @Slf4j
 public class UploadSessionManager {
@@ -43,7 +46,7 @@ public class UploadSessionManager {
                 redisTemplate.opsForValue().set(SESSION_KEY_PREFIX + sessionId, session,
                         Duration.ofHours(24));
             } catch (Exception e) {
-                log.warn("Failed to persist session to Redis: {}", e.getMessage());
+                log.debug("Redis unavailable or error, falling back to local storage: {}", e.getMessage());
             }
         }
 
@@ -71,14 +74,14 @@ public class UploadSessionManager {
             try {
                 redisTemplate.delete(SESSION_KEY_PREFIX + sessionId);
             } catch (Exception e) {
-                log.warn("Failed to remove session from Redis: {}", e.getMessage());
+                log.debug("Redis unavailable or error, local session already removed: {}", e.getMessage());
             }
         }
         log.info("Upload session removed: {}", sessionId);
     }
 
     public static String generateObjectName(String fileName) {
-        // Sanitize the file name to remove path separators and control characters
+        // 清理文件名，移除路径分隔符和控制字符
         String safeName = fileName.replaceAll("[/\\\\\\u0000-\\u001F]", "_");
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         return "uploads/" + date + "/" + UUID.randomUUID() + "/" + safeName;

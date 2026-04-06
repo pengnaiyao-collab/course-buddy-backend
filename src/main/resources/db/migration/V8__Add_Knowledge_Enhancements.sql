@@ -1,6 +1,6 @@
--- V8: Add knowledge base enhancements: associations, OCR, web imports, audit log entity
+-- V8：新增知识库增强功能：关联、OCR、网页导入、审计日志实体
 
--- Knowledge item associations (links between knowledge items)
+-- 知识条目关联（知识条目之间的链接）
 CREATE TABLE IF NOT EXISTS knowledge_associations (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
     source_id       BIGINT      NOT NULL COMMENT '源知识点ID',
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS knowledge_associations (
     CONSTRAINT fk_ka_target FOREIGN KEY (target_id) REFERENCES knowledge_items (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识点关联表';
 
--- Web page imports
+-- 网页导入
 CREATE TABLE IF NOT EXISTS web_imports (
     id              BIGINT        NOT NULL AUTO_INCREMENT,
     course_id       BIGINT        NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS web_imports (
     CONSTRAINT fk_web_imports_course FOREIGN KEY (course_id) REFERENCES courses (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网页导入记录表';
 
--- OCR results
+-- OCR 结果
 CREATE TABLE IF NOT EXISTS ocr_results (
     id              BIGINT      NOT NULL AUTO_INCREMENT,
     file_upload_id  BIGINT      COMMENT '关联的文件上传记录',
@@ -55,13 +55,13 @@ CREATE TABLE IF NOT EXISTS ocr_results (
     KEY idx_ocr_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OCR识别结果表';
 
--- Add extracted_text and status columns to knowledge_items for full-text search
+-- 为 knowledge_items 增加 extracted_text 与 status 字段以支持全文检索
 ALTER TABLE knowledge_items
     ADD COLUMN extracted_text LONGTEXT COMMENT '从文件提取的文本内容',
     ADD COLUMN source_type    VARCHAR(64) DEFAULT 'MANUAL' COMMENT 'MANUAL, FILE, WEB, OCR',
     ADD COLUMN status        VARCHAR(32) DEFAULT 'PUBLISHED' COMMENT 'DRAFT, PENDING_REVIEW, PUBLISHED, REJECTED';
 
--- Full-text index on knowledge_items for search (use DROP IF EXISTS + ADD pattern for idempotency)
+-- 为 knowledge_items 添加全文索引用于搜索（使用 DROP IF EXISTS + ADD 保证幂等）
 SET @idx_exists = (SELECT COUNT(*) FROM information_schema.STATISTICS
     WHERE TABLE_SCHEMA = DATABASE()
       AND TABLE_NAME = 'knowledge_items'

@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 聊天消息视图对象
+ */
 @Data
 @Builder
 public class ChatMessageVO {
@@ -13,6 +16,9 @@ public class ChatMessageVO {
     private Long conversationId;
     private String role;
     private String content;
+    private String imageData;
+    private String imageMimeType;
+    private String imageName;
     private Integer tokenCount;
     private LocalDateTime createdAt;
 }

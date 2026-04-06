@@ -1,6 +1,6 @@
 # Java 代码规范
 
-本文档定义 Course Buddy Backend 项目的 Java 编码标准，所有开发者提交代码前必须遵守。
+本文档定义 课伴 Backend 项目的 Java 编码标准，所有开发者提交代码前必须遵守。
 
 ---
 
@@ -82,7 +82,7 @@ public NoteVO fetchNoteData(Long id) // fetch/Data 冗余
 | `save` | 保存（创建或更新） | `saveNote` |
 | `is`/`has`/`can` | 布尔判断 | `isOwner`, `hasPermission`, `canEdit` |
 | `send` | 发送 | `sendEmail`, `sendNotification` |
-| `export` | 导出 | `exportToPdf`, `exportToMarkdown` |
+| `export` | 导出 | `exportToPdf` |
 
 ### 变量命名
 

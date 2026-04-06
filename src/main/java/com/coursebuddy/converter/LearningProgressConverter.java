@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 进度转换器
+ */
 @Component
 public class LearningProgressConverter {
 

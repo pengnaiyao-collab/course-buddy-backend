@@ -9,8 +9,12 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * 课程目录映射器
+ */
 @Mapper
 public interface CourseCatalogMapper extends BaseMapper<CoursePO> {
 
@@ -22,6 +26,11 @@ public interface CourseCatalogMapper extends BaseMapper<CoursePO> {
 
     @Select("SELECT * FROM course_catalog WHERE instructor_id = #{instructorId} AND deleted_at IS NULL")
     IPage<CoursePO> findByInstructorIdAndDeletedAtIsNull(Page<CoursePO> page, @Param("instructorId") Long instructorId);
+
+    @Select("SELECT * FROM course_catalog WHERE id IN (" +
+            "  SELECT course_id FROM course_enrollments WHERE user_id = #{studentId} AND status IN ('ACTIVE', 'COMPLETED')" +
+            ") AND deleted_at IS NULL")
+    java.util.List<CoursePO> findByStudentIdAndDeletedAtIsNull(@Param("studentId") Long studentId);
 
     @Select("SELECT * FROM course_catalog WHERE status = #{status} AND deleted_at IS NULL")
     IPage<CoursePO> findByStatusAndDeletedAtIsNull(Page<CoursePO> page, @Param("status") String status);
@@ -38,4 +47,7 @@ public interface CourseCatalogMapper extends BaseMapper<CoursePO> {
 
     @Update("UPDATE course_catalog SET enrolled_count = enrolled_count - 1 WHERE id = #{id} AND enrolled_count > 0")
     void decrementEnrolledCount(@Param("id") Long id);
+
+        @Update("UPDATE course_catalog SET deleted_at = #{deletedAt} WHERE id = #{id} AND deleted_at IS NULL")
+        int markDeleted(@Param("id") Long id, @Param("deletedAt") LocalDateTime deletedAt);
 }

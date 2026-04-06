@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 课程讨论转换器
+ */
 @Component
 public class CourseDiscussionConverter {
 

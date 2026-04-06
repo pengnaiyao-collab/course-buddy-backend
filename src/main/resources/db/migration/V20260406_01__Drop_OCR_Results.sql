@@ -1,0 +1,2 @@
+-- V20260406_01：删除 OCR 结果表
+DROP TABLE IF EXISTS ocr_results;

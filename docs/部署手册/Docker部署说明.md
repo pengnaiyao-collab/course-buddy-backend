@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-本文档介绍如何使用 Docker 单独构建和运行 Course Buddy Backend 应用镜像。如需完整的多服务编排（含 MySQL、Redis、Nginx），请参阅 [Docker Compose 部署](./Docker_Compose部署.md)。
+本文档介绍如何使用 Docker 单独构建和运行 课伴 Backend 应用镜像。如需完整的多服务编排（含 MySQL、Redis、Nginx），请参阅 [Docker Compose 部署](./Docker_Compose部署.md)。
 
 ---
 

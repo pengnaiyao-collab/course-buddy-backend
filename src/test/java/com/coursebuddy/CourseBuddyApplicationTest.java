@@ -6,6 +6,8 @@ import com.coursebuddy.domain.auth.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -29,6 +31,9 @@ class CourseBuddyApplicationTest {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @MockBean
+    private StringRedisTemplate redisTemplate;
+
     @Test
     void contextLoads() {
         assertThat(jwtUtil).isNotNull();
@@ -39,7 +44,6 @@ class CourseBuddyApplicationTest {
         User user = User.builder()
                 .id(1L)
                 .username("testuser")
-                .email("test@example.com")
                 .password("encodedPassword")
                 .role(Role.STUDENT)
                 .build();

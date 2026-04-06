@@ -16,6 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 课程资源控制器
+ */
 @Tag(name = "Course Resources", description = "Course resource management endpoints")
 @RestController
 @RequestMapping("/v1/course-resources")
@@ -27,7 +30,7 @@ public class CourseResourceController {
     @Operation(summary = "Create a course resource", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/courses/{courseId}")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TA')")
     public ApiResponse<CourseResourceVO> createResource(
             @PathVariable Long courseId,
             @Valid @RequestBody CourseResourceDTO dto) {
@@ -50,7 +53,7 @@ public class CourseResourceController {
 
     @Operation(summary = "Delete a resource", security = @SecurityRequirement(name = "bearerAuth"))
     @DeleteMapping("/{resourceId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TA')")
     public ApiResponse<Void> deleteResource(@PathVariable Long resourceId) {
         resourceService.deleteResource(resourceId);
         return ApiResponse.success(null);

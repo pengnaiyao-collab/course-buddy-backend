@@ -5,6 +5,9 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 课程持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

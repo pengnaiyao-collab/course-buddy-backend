@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 用户转换器
+ */
 @Component
 @RequiredArgsConstructor
 public class UserConverter {
@@ -18,8 +21,10 @@ public class UserConverter {
         if (dto == null) return null;
         return UserPO.builder()
                 .username(dto.getUsername())
-                .email(dto.getEmail())
                 .password(passwordEncoder.encode(dto.getPassword()))
+                .studentNumber(dto.getStudentNumber())
+                .realName(dto.getRealName())
+                .role(dto.getRole())
                 .isActive(true)
                 .isLocked(false)
                 .build();
@@ -30,13 +35,17 @@ public class UserConverter {
         return UserVO.builder()
                 .id(po.getId())
                 .username(po.getUsername())
-                .email(po.getEmail())
+                .studentNumber(po.getStudentNumber())
                 .realName(po.getRealName())
-                .phone(po.getPhone())
+                .school(po.getSchool())
                 .avatar(po.getAvatar())
+                .avatarUrl(po.getAvatarUrl())
+                .role(po.getRole())
+                .status(po.getStatus())
                 .isActive(po.getIsActive())
                 .createdAt(po.getCreatedAt())
                 .lastLoginAt(po.getLastLoginAt())
+                .lastLoginIp(po.getLastLoginIp())
                 .build();
     }
 

@@ -1,6 +1,6 @@
 package com.coursebuddy.service.impl;
 
-import com.coursebuddy.auth.User;
+import com.coursebuddy.domain.auth.User;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.domain.po.NotePO;
@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 笔记版本服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class NoteVersionServiceImpl implements INoteVersionService {

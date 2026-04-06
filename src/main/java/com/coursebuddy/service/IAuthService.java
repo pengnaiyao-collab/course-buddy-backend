@@ -1,6 +1,5 @@
 package com.coursebuddy.service;
 
-import com.coursebuddy.domain.dto.ChangePasswordDTO;
 import com.coursebuddy.domain.dto.LoginDTO;
 import com.coursebuddy.domain.dto.RefreshTokenDTO;
 import com.coursebuddy.domain.dto.RegisterDTO;
@@ -10,6 +9,9 @@ import com.coursebuddy.domain.vo.RefreshTokenResponseVO;
 import com.coursebuddy.domain.vo.RegisterResponseVO;
 import com.coursebuddy.domain.vo.UserVO;
 
+/**
+ * 认证服务
+ */
 public interface IAuthService {
 
     LoginResponseVO login(LoginDTO loginDto);
@@ -20,7 +22,6 @@ public interface IAuthService {
 
     void logout(Long userId);
 
-    void changePassword(Long userId, ChangePasswordDTO changePasswordDto);
 
     UserVO getCurrentUser(Long userId);
 

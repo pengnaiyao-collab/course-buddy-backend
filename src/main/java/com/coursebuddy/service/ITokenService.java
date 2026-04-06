@@ -2,6 +2,9 @@ package com.coursebuddy.service;
 
 import com.coursebuddy.domain.po.TokenPO;
 
+/**
+ * 令牌服务
+ */
 public interface ITokenService {
 
     TokenPO generateTokens(Long userId);

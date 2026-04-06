@@ -1,6 +1,6 @@
 # REST API 设计规范
 
-本文档定义 Course Buddy Backend 的 RESTful API 设计标准，确保 API 风格一致、语义清晰、易于使用。
+本文档定义 课伴 Backend 的 RESTful API 设计标准，确保 API 风格一致、语义清晰、易于使用。
 
 ---
 
@@ -34,11 +34,11 @@ http://localhost:8080/api/v1/{resource}
 ```
 # ✅ 正确
 GET  /v1/notes
-GET  /v1/courses
-GET  /v1/user-profile
-GET  /v1/course-discussions
-GET  /v1/note-categories
-GET  /v1/knowledge-base
+GET  /v1/courses-catalog
+GET  /users/me
+GET  /discussions
+GET  /notes
+GET  /v1/courses-catalog
 
 # ❌ 错误
 GET  /v1/getNote         # 动词
@@ -54,7 +54,7 @@ GET  /v1/getNoteList     # 驼峰
 
 ```
 # 课程下的作业列表
-GET    /v1/courses/{courseId}/assignments
+GET    /v1/assignments/courses/{courseId}
 
 # 作业的提交列表
 GET    /v1/assignments/{assignmentId}/submissions
@@ -63,7 +63,7 @@ GET    /v1/assignments/{assignmentId}/submissions
 GET    /v1/notes/{noteId}/versions
 
 # ❌ 避免过深的嵌套（不超过 3 级）
-GET  /v1/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/materials
+GET  /v1/courses-catalog/{courseId}/modules/{moduleId}/lessons/{lessonId}/materials
 # 可以改为：
 GET  /v1/lessons/{lessonId}/materials
 ```
@@ -97,22 +97,18 @@ DELETE  /v1/notes/{id}         # 删除笔记
 对于不符合 CRUD 模式的操作，使用动词作为资源的子资源：
 
 ```
-# 加入/离开课程
-POST    /v1/courses/{courseId}/join
-POST    /v1/courses/{courseId}/leave
+# 加入/退课
+POST    /enrollments
+PUT     /enrollments/courses/{courseId}/drop
 
 # 恢复笔记版本
 POST    /v1/notes/{noteId}/versions/{versionId}/restore
 
 # 提交作业
-POST    /v1/assignments/{assignmentId}/submit
+POST    /v1/submissions/assignments/{assignmentId}
 
-# 批量标记消息已读
-PUT     /v1/messages/read-all
-
-# 笔记导出
-GET     /v1/notes/{noteId}/export/pdf
-GET     /v1/notes/{noteId}/export/markdown
+# 生成签到码
+POST    /v1/attendance/courses/{courseId}/code
 ```
 
 ---

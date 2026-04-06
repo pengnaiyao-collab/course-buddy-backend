@@ -1,8 +1,8 @@
--- V11: Complete Notes module schema
--- Adds missing columns to notes and note_categories, and creates note_tag_relations table
+-- V11：完善笔记模块结构
+-- 为 notes 与 note_categories 补充缺失列，并创建 note_tag_relations 表
 
 -- ============================================================
--- Add columns to notes only when missing (MySQL 5.7 compatible)
+-- 仅在缺失时为 notes 添加列（兼容 MySQL 5.7）
 SET @db := DATABASE();
 
 SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=@db AND table_name='notes' AND column_name='category_id') = 0,
@@ -35,7 +35,7 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.columns WHERE table_sche
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ============================================================
--- 3. Create note_tag_relations table
+-- 3. 创建 note_tag_relations 表
 -- ============================================================
 CREATE TABLE IF NOT EXISTS note_tag_relations (
     id         BIGINT   NOT NULL AUTO_INCREMENT,

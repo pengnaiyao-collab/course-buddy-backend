@@ -3,6 +3,9 @@ package com.coursebuddy.domain.dto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * 课时传输对象
+ */
 @Data
 public class LessonDTO {
     private Long courseId;

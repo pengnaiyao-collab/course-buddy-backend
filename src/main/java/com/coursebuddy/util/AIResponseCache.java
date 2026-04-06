@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class AIResponseCache {
 
-    private static final long DEFAULT_TTL_MS = 3_600_000L; // 1 hour
+    private static final long DEFAULT_TTL_MS = 3_600_000L; // 1 小时
 
     private record CacheEntry(String value, long expireAt) {
         boolean isExpired() {
@@ -26,7 +26,7 @@ public class AIResponseCache {
     private final AtomicLong hitCount = new AtomicLong(0);
     private final AtomicLong missCount = new AtomicLong(0);
 
-    /** 生成缓存 key */
+    /** 生成缓存键 */
     public String buildKey(String contentType, String subject) {
         return contentType + ":" + subject.hashCode();
     }
@@ -50,14 +50,14 @@ public class AIResponseCache {
         log.debug("Cached response for key: {}", key);
     }
 
-    /** 写入缓存（自定义 TTL，单位秒 seconds） */
+    /** 写入缓存（自定义 TTL，单位：秒） */
     public void putWithTtlSeconds(String key, String value, long ttlSeconds) {
         long ttlMs = ttlSeconds > 0 ? ttlSeconds * 1000L : DEFAULT_TTL_MS;
         cache.put(key, new CacheEntry(value, System.currentTimeMillis() + ttlMs));
         log.debug("Cached response for key: {}", key);
     }
 
-    /** 删除指定 key */
+    /** 删除指定缓存键 */
     public void evict(String key) {
         cache.remove(key);
     }

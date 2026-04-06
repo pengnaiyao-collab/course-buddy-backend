@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 用户视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,11 +18,15 @@ public class UserVO {
 
     private Long id;
     private String username;
-    private String email;
+    private String studentNumber;
     private String realName;
-    private String phone;
+    private String school;
     private String avatar;
+    private String avatarUrl;
+    private String role;
+    private String status;
     private Boolean isActive;
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
+    private String lastLoginIp;
 }

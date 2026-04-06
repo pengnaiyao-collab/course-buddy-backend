@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 上传进度视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -10,6 +10,9 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
+/**
+ * 笔记映射器
+ */
 @Mapper
 public interface NoteMapper extends BaseMapper<NotePO> {
 

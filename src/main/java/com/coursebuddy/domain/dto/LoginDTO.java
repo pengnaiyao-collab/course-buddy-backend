@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 登录传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

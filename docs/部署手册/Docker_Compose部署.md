@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-本文档详细介绍使用 Docker Compose 完整部署 Course Buddy Backend 的全部服务，包括应用服务（Spring Boot）、数据库（MySQL 8.0）、缓存（Redis 7.2）和反向代理（Nginx）。
+本文档详细介绍使用 Docker Compose 完整部署 课伴 Backend 的全部服务，包括应用服务（Spring Boot）、数据库（MySQL 8.0）、缓存（Redis 7.2）和反向代理（Nginx）。
 
 ---
 
@@ -299,18 +299,6 @@ server {
         proxy_connect_timeout 60s;
         proxy_read_timeout 60s;
         proxy_send_timeout 60s;
-    }
-
-    # WebSocket 代理
-    location /api/ws/ {
-        proxy_pass http://app:8080/api/ws/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
     }
 
     # 健康检查端点（不记录日志）

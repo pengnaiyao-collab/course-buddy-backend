@@ -17,6 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 课程目录控制器
+ */
 @Tag(name = "Course Catalog", description = "Course catalog management endpoints")
 @RestController
 @RequestMapping("/v1/courses-catalog")
@@ -28,7 +31,7 @@ public class CourseCatalogController {
     @Operation(summary = "Create a new course", security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<CourseVO> createCourse(@Valid @RequestBody CourseDTO dto) {
         return ApiResponse.success("Course created successfully", courseService.createCourse(dto));
     }
@@ -55,6 +58,13 @@ public class CourseCatalogController {
         return ApiResponse.success(courseService.listMyTeachingCourses(pageable));
     }
 
+    @Operation(summary = "List my enrolled courses", security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/my-enrolled")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Page<CourseVO>> listMyEnrolledCourses(@PageableDefault(size = 20) Pageable pageable) {
+        return ApiResponse.success(courseService.listMyEnrolledCourses(pageable));
+    }
+
     @Operation(summary = "Get a course by ID", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{courseId}")
     public ApiResponse<CourseVO> getCourse(@PathVariable Long courseId) {
@@ -63,7 +73,7 @@ public class CourseCatalogController {
 
     @Operation(summary = "Update a course", security = @SecurityRequirement(name = "bearerAuth"))
     @PutMapping("/{courseId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<CourseVO> updateCourse(@PathVariable Long courseId, @Valid @RequestBody CourseDTO dto) {
         return ApiResponse.success("Course updated successfully", courseService.updateCourse(courseId, dto));
     }
@@ -78,6 +88,7 @@ public class CourseCatalogController {
 
     @Operation(summary = "Get course statistics", security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{courseId}/stats")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TA')")
     public ApiResponse<CourseStatsVO> getCourseStats(@PathVariable Long courseId) {
         return ApiResponse.success(courseService.getCourseStats(courseId));
     }

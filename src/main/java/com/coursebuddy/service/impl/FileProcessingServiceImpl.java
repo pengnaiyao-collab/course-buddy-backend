@@ -18,6 +18,9 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 文件服务实现
+ */
 @Service
 @Slf4j
 public class FileProcessingServiceImpl implements IFileProcessingService {

@@ -177,7 +177,7 @@ JWT_SECRET=dev-secret-32-chars-minimum ./mvnw spring-boot:run \
 
 ```json
 {
-  "name": "Course Buddy Backend Dev",
+  "name": "课伴 Backend Dev",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspace",

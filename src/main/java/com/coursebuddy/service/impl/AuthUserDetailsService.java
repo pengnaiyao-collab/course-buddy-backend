@@ -18,6 +18,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 认证用户服务
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthUserDetailsService implements UserDetailsService {
@@ -37,18 +40,18 @@ public class AuthUserDetailsService implements UserDetailsService {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException(409, "用户名已存在");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BusinessException(409, "该邮箱已被注册");
-        }
 
         Role role = request.getRole() != null ? request.getRole() : Role.STUDENT;
+        if (role != Role.STUDENT && role != Role.TEACHER) {
+            throw new BusinessException(403, "注册时不允许选择该角色");
+        }
 
         User user = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getFullName())
+                .realName(request.getFullName())
                 .role(role)
+                .status(role == Role.TEACHER ? "PENDING" : "ACTIVE")
                 .build();
 
         userRepository.insert(user);
@@ -62,6 +65,18 @@ public class AuthUserDetailsService implements UserDetailsService {
         );
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("找不到该用户"));
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new BusinessException(403, "该用户账户未激活");
+        }
+        if (Boolean.TRUE.equals(user.getIsLocked())) {
+            throw new BusinessException(403, "该用户账户已被锁定");
+        }
+        if ("PENDING".equals(user.getStatus())) {
+            throw new BusinessException(403, "您的教师账号正在审核中，请耐心等待管理员通过");
+        }
+        if ("REJECTED".equals(user.getStatus())) {
+            throw new BusinessException(403, "教师账号审核未通过，请联系管理员");
+        }
         String token = jwtUtil.generateToken(user);
         return AuthResponseVO.of(token, user);
     }

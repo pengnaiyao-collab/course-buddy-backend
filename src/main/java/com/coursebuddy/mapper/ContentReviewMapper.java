@@ -11,6 +11,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 内容审核映射器
+ */
 @Mapper
 public interface ContentReviewMapper extends BaseMapper<ContentReviewPO> {
 

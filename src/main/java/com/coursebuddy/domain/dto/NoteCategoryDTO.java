@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 笔记分类传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

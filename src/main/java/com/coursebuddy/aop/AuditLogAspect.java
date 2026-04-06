@@ -18,6 +18,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 
+/**
+ * 审计日志切面
+ */
 @Aspect
 @Component
 @Slf4j
@@ -40,13 +43,15 @@ public class AuditLogAspect {
 
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof com.coursebuddy.auth.User user) {
+            if (auth != null && auth.getPrincipal() instanceof com.coursebuddy.domain.auth.User user) {
                 operatorId = user.getId();
                 operatorName = user.getUsername();
             } else if (auth != null && auth.getPrincipal() instanceof UserDetails ud) {
                 operatorName = ud.getUsername();
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.debug("Failed to extract user info from security context", e);
+        }
 
         try {
             ServletRequestAttributes attrs =
@@ -55,7 +60,9 @@ public class AuditLogAspect {
                 HttpServletRequest req = attrs.getRequest();
                 ipAddress = getClientIp(req);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            log.debug("Failed to extract IP address from request context", e);
+        }
 
         Object result = joinPoint.proceed();
 

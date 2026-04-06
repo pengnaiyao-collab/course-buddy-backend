@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * 作业传输对象
+ */
 @Data
 public class AssignmentDTO {
     private Long courseId;
@@ -13,6 +16,6 @@ public class AssignmentDTO {
 
     private String description;
     private LocalDateTime dueDate;
-    private Integer maxScore;
+    private Double maxScore;
     private String attachmentUrl;
 }

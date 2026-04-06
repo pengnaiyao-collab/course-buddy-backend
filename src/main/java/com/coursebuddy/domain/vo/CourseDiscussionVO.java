@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 课程讨论视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

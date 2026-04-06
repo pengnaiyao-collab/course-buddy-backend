@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * 用户
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,16 +32,21 @@ public class User implements UserDetails {
 
     private String username;
 
-    private String email;
-
     private String password;
 
-    private String fullName;
+    private String realName;
 
     private Role role;
 
+    private String status;
+
+    @TableField("is_active")
     @Builder.Default
-    private boolean enabled = true;
+    private Boolean isActive = true;
+
+    @TableField("is_locked")
+    @Builder.Default
+    private Boolean isLocked = false;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
@@ -48,7 +56,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getValue()));
     }
 
     @Override
@@ -58,11 +66,16 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !Boolean.TRUE.equals(isLocked);
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(isActive);
     }
 }

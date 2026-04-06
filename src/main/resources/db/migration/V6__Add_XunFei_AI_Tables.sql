@@ -1,4 +1,4 @@
--- V6__Add_XunFei_AI_Tables.sql
+-- V6：新增讯飞星火 AI 相关表
 -- 讯飞星火 AI 对接相关数据表
 
 -- AI 对话会话表

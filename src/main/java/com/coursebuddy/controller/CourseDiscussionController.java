@@ -15,6 +15,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 课程讨论控制器
+ */
 @Tag(name = "Course Discussions", description = "Course discussion endpoints")
 @RestController
 @RequestMapping("/discussions")
@@ -57,12 +60,6 @@ public class CourseDiscussionController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ApiResponse.success(null);
-    }
-
-    @Operation(summary = "Like a discussion", security = @SecurityRequirement(name = "bearerAuth"))
-    @PostMapping("/{id}/like")
-    public ApiResponse<CourseDiscussionVO> like(@PathVariable Long id) {
-        return ApiResponse.success(service.like(id));
     }
 
     @Operation(summary = "Pin/unpin a discussion", security = @SecurityRequirement(name = "bearerAuth"))

@@ -1,5 +1,8 @@
 package com.coursebuddy.common.exception;
 
+/**
+ * 异常
+ */
 public class BusinessException extends RuntimeException {
 
     private final int code;

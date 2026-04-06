@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 考勤转换器
+ */
 @Component
 public class AttendanceConverter {
 

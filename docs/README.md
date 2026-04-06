@@ -1,6 +1,6 @@
-# Course Buddy Backend — 文档导航中心
+# 课伴 Backend — 文档导航中心
 
-> **Course Buddy** 是一款面向高校师生的课程管理与学习协作平台后端服务，基于 Spring Boot 3.2.2 构建，提供课程管理、笔记协作、AI 辅助学习、文件存储等核心功能。
+> **课伴** 是一款面向高校师生的课程管理与学习平台后端服务，基于 Spring Boot 3.2.2 构建，提供课程管理、笔记管理、AI 辅助学习、文件存储等核心功能。
 
 ---
 
@@ -120,18 +120,21 @@ docs/
 | 模块 | 说明 | API 前缀 |
 |------|------|----------|
 | 认证模块 | 注册、登录、JWT 令牌 | `/api/v1/auth` |
-| 课程管理 | 课程 CRUD、目录、权限 | `/api/v1/courses` |
-| 笔记系统 | 笔记创建、版本、分享、分类、标签 | `/api/v1/notes` |
-| 协作编辑 | WebSocket 实时协作 | `/api/v1/collaboration` |
-| 知识库 | 知识点管理、关联 | `/api/v1/knowledge-base` |
-| 作业管理 | 发布作业、提交、批改 | `/api/v1/assignments` |
+| 课程管理 | 课程目录、检索、教学课程 | `/api/v1/courses-catalog` |
+| 课程课节 | 课节创建、发布、排序 | `/api/v1/lessons` |
+| 课程资源 | 资源上传与管理 | `/api/v1/course-resources` |
+| 课程选课 | 选课、退课、结课 | `/api/enrollments` |
+| 课程讨论 | 讨论帖发布、回复、置顶 | `/api/discussions` |
+| 笔记系统 | 笔记创建、分类、版本 | `/api/notes` |
+| 作业管理 | 作业发布、提交、批改 | `/api/v1/assignments` `/api/v1/submissions` |
 | 考勤管理 | 签到、统计 | `/api/v1/attendance` |
-| 团队管理 | 学习团队、成员 | `/api/v1/teams` |
-| 用户档案 | 个人信息、头像 | `/api/v1/user-profile` |
+| 成绩管理 | 成绩单查询与录入 | `/api/v1/grades` |
+| 学习进度 | 学习进度与统计 | `/api/learning-progress` |
+| 用户档案 | 个人信息、头像 | `/api/users` |
 | 文件上传 | MinIO 分块上传 | `/api/v1/files` |
-| AI 助手 | 讯飞星火对话 | `/api/v1/xunfei` |
-| 消息通知 | 站内消息 | `/api/v1/messages` |
-| OCR 识别 | 图片文字识别 | `/api/v1/ocr` |
+| AI 助手 | 通用 AI 对话 | `/api/v1/ai` |
+| 内容审核 | 内容审核流程 | `/api/v1/reviews` |
+| 版本管理 | 通用版本对比 | `/api/v1/versions` |
 
 ---
 
@@ -158,4 +161,4 @@ docs/
 
 ---
 
-*最后更新：2024 年*
+*最后更新：2026 年 4 月 6 日*

@@ -12,6 +12,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+/**
+ * AI配置
+ */
 @Slf4j
 @Configuration
 public class AIModelConfig {

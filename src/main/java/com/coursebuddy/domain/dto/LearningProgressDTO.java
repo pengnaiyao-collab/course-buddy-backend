@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 进度传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

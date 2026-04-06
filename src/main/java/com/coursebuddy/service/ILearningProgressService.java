@@ -7,6 +7,9 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Map;
 
+/**
+ * 进度服务
+ */
 public interface ILearningProgressService {
     LearningProgressVO updateProgress(LearningProgressDTO dto);
     LearningProgressVO getMyProgressForCourse(Long courseId);

@@ -3,6 +3,9 @@ package com.coursebuddy.domain.vo;
 import lombok.Builder;
 import lombok.Data;
 
+/**
+ * 知识库视图对象
+ */
 @Data
 @Builder
 public class KnowledgeSourceVO {

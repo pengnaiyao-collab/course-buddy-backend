@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+/**
+ * 令牌转换器
+ */
 @Component
 public class TokenConverter {
 

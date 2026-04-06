@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import java.time.LocalDate;
 
+/**
+ * 课程传输对象
+ */
 @Data
 public class CourseDTO {
     private String code;

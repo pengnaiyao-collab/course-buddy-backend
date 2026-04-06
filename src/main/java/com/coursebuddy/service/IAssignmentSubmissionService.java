@@ -2,10 +2,17 @@ package com.coursebuddy.service;
 
 import com.coursebuddy.domain.dto.AssignmentSubmissionDTO;
 import com.coursebuddy.domain.dto.GradeSubmissionDTO;
+import com.coursebuddy.domain.vo.AssignmentSubmissionCountVO;
 import com.coursebuddy.domain.vo.AssignmentSubmissionVO;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
+/**
+ * 作业提交服务
+ */
 public interface IAssignmentSubmissionService {
     AssignmentSubmissionVO submitAssignment(Long assignmentId, AssignmentSubmissionDTO dto);
     AssignmentSubmissionVO updateSubmission(Long id, AssignmentSubmissionDTO dto);
@@ -13,4 +20,7 @@ public interface IAssignmentSubmissionService {
     Page<AssignmentSubmissionVO> listSubmissions(Long assignmentId, Pageable pageable);
     AssignmentSubmissionVO gradeSubmission(Long id, GradeSubmissionDTO dto);
     AssignmentSubmissionVO getMySubmission(Long assignmentId);
+    List<AssignmentSubmissionVO> listMySubmissionsByCourse(Long courseId);
+    List<AssignmentSubmissionCountVO> listSubmissionCountsByCourse(Long courseId);
+    Resource downloadAllSubmissions(Long assignmentId);
 }

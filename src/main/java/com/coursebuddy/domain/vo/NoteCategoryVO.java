@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 笔记分类视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

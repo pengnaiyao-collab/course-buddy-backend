@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 刷新令牌传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor

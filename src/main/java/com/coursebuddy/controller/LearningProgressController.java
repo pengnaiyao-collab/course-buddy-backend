@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * 进度控制器
+ */
 @Tag(name = "Learning Progress", description = "Learning progress tracking endpoints")
 @RestController
 @RequestMapping("/learning-progress")

@@ -1,4 +1,4 @@
--- V14__Add_Knowledge_Resources_Table.sql
+-- V14：新增知识资源表
 
 CREATE TABLE IF NOT EXISTS knowledge_resources (
     id                BIGINT       NOT NULL AUTO_INCREMENT,

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 笔记版本控制器
+ */
 @Tag(name = "Note Versions", description = "Note version management endpoints")
 @RestController
 @RequestMapping("/notes")

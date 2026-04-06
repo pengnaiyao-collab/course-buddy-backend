@@ -4,6 +4,9 @@ import com.coursebuddy.domain.po.ContentReviewPO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+/**
+ * 内容审核服务
+ */
 public interface IContentReviewService {
 
     ContentReviewPO submitForReview(String contentType, Long contentId,

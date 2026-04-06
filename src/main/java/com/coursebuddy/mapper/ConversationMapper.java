@@ -8,6 +8,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+/**
+ * 会话映射器
+ */
 @Mapper
 public interface ConversationMapper extends BaseMapper<ConversationPO> {
 

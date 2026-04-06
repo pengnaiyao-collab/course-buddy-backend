@@ -15,6 +15,9 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 作业控制器
+ */
 @Tag(name = "Assignments", description = "Assignment management endpoints")
 @RestController
 @RequestMapping("/v1/assignments")
@@ -53,6 +56,7 @@ public class AssignmentController {
     @Operation(summary = "Delete an assignment", security = @SecurityRequirement(name = "bearerAuth"))
     @DeleteMapping("/{assignmentId}")
     public ApiResponse<Void> deleteAssignment(@PathVariable Long assignmentId) {
+        System.out.println("🗑️ DELETE 请求到达 Controller: assignmentId=" + assignmentId);
         assignmentService.deleteAssignment(assignmentId);
         return ApiResponse.success(null);
     }
@@ -61,5 +65,12 @@ public class AssignmentController {
     @PostMapping("/{assignmentId}/publish")
     public ApiResponse<AssignmentVO> publishAssignment(@PathVariable Long assignmentId) {
         return ApiResponse.success("Assignment published", assignmentService.publishAssignment(assignmentId));
+    }
+
+    // 调试用：查看所有作业包括已删除的
+    @Operation(summary = "Get all assignments for debugging (includes deleted)")
+    @GetMapping("/debug/courses/{courseId}/all")
+    public ApiResponse<Object> debugGetAllAssignments(@PathVariable Long courseId) {
+        return ApiResponse.success(assignmentService.getAllAssignmentsIncludingDeleted(courseId));
     }
 }

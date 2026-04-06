@@ -1,6 +1,6 @@
 # Linux 开发环境搭建指南
 
-本文档说明如何在 Linux（Ubuntu/Debian 和 CentOS/RHEL/Rocky）系统上搭建 Course Buddy Backend 本地开发环境。
+本文档说明如何在 Linux（Ubuntu/Debian 和 CentOS/RHEL/Rocky）系统上搭建 课伴 Backend 本地开发环境。
 
 ---
 

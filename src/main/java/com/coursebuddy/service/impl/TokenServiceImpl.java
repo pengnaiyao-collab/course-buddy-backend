@@ -28,7 +28,6 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class TokenServiceImpl implements ITokenService {
 
     private final TokenMapper tokenRepository;
@@ -53,6 +52,7 @@ public class TokenServiceImpl implements ITokenService {
      * @return 包含新生成 Token 信息的持久化对象
      */
     @Override
+    @Transactional
     public TokenPO generateTokens(Long userId) {
         log.info("为用户生成 Token: {}", userId);
 
@@ -88,7 +88,14 @@ public class TokenServiceImpl implements ITokenService {
                     .verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
                     .build()
                     .parseSignedClaims(token);
-            return true;
+            TokenPO tokenRecord = tokenRepository.findByAccessToken(token).orElse(null);
+            if (tokenRecord == null) {
+                return false;
+            }
+            if (Boolean.TRUE.equals(tokenRecord.getIsRevoked())) {
+                return false;
+            }
+            return LocalDateTime.now().isBefore(tokenRecord.getExpiresAt());
         } catch (Exception e) {
             log.warn("无效的 Token: {}", e.getMessage());
             return false;
@@ -132,6 +139,7 @@ public class TokenServiceImpl implements ITokenService {
      * @throws BusinessException 当 Refresh Token 无效或过期时抛出
      */
     @Override
+    @Transactional
     public TokenPO refreshAccessToken(String refreshToken) {
         log.info("刷新 Access Token");
 
@@ -159,6 +167,7 @@ public class TokenServiceImpl implements ITokenService {
      * @param refreshToken 待撤销的 Refresh Token
      */
     @Override
+    @Transactional
     public void revokeToken(String refreshToken) {
         log.info("撤销 Token");
         tokenRepository.findByRefreshToken(refreshToken)
@@ -175,6 +184,7 @@ public class TokenServiceImpl implements ITokenService {
      * @param userId 目标用户 ID
      */
     @Override
+    @Transactional
     public void revokeAllUserTokens(Long userId) {
         log.info("撤销该用户的所有 Token: {}", userId);
         tokenRepository.findByUserId(userId)

@@ -1,7 +1,7 @@
--- V3__Create_Course_Buddy_Tables.sql
--- Creates tables for knowledge base, AI assistant, collaboration, and notes modules
+-- V3：创建课程/知识库/AI/协作/笔记相关表
+-- 创建知识库、AI 助手、协作与笔记模块相关表
 
--- Knowledge Base
+-- 知识库
 CREATE TABLE IF NOT EXISTS knowledge_items (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
     course_id    BIGINT       NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS knowledge_items (
     CONSTRAINT fk_knowledge_items_creator FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- AI Assistant: Questions
+-- AI 助手：问题
 CREATE TABLE IF NOT EXISTS questions (
     id         BIGINT   NOT NULL AUTO_INCREMENT,
     course_id  BIGINT,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS questions (
     CONSTRAINT fk_questions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- AI Assistant: Answers
+-- AI 助手：答案
 CREATE TABLE IF NOT EXISTS answers (
     id          BIGINT      NOT NULL AUTO_INCREMENT,
     question_id BIGINT      NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS answers (
     CONSTRAINT fk_answers_question FOREIGN KEY (question_id) REFERENCES questions (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- AI Assistant: Learning Tasks
+-- AI 助手：学习任务
 CREATE TABLE IF NOT EXISTS learning_tasks (
     id          BIGINT      NOT NULL AUTO_INCREMENT,
     user_id     BIGINT      NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS learning_tasks (
     CONSTRAINT fk_learning_tasks_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Collaboration: Projects
+-- 协作：项目
 CREATE TABLE IF NOT EXISTS collaboration_projects (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     course_id   BIGINT,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS collaboration_projects (
     CONSTRAINT fk_collab_projects_owner FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Collaboration: Tasks
+-- 协作：任务
 CREATE TABLE IF NOT EXISTS collaboration_tasks (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     project_id  BIGINT       NOT NULL,
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS collaboration_tasks (
     CONSTRAINT fk_collab_tasks_assignee FOREIGN KEY (assignee_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Notes
+-- 笔记
 CREATE TABLE IF NOT EXISTS notes (
     id         BIGINT       NOT NULL AUTO_INCREMENT,
     user_id    BIGINT       NOT NULL,

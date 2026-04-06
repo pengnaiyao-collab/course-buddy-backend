@@ -1,6 +1,6 @@
 # Git 工作流说明
 
-本文档描述 Course Buddy Backend 项目的 Git 分支策略和工作流程。
+本文档描述 课伴 Backend 项目的 Git 分支策略和工作流程。
 
 ---
 

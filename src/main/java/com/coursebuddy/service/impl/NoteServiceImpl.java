@@ -1,6 +1,6 @@
 package com.coursebuddy.service.impl;
 
-import com.coursebuddy.auth.User;
+import com.coursebuddy.domain.auth.User;
 import com.coursebuddy.common.MybatisPlusPageUtils;
 import com.coursebuddy.common.SecurityUtils;
 import com.coursebuddy.common.exception.BusinessException;
@@ -17,6 +17,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
+/**
+ * 笔记服务实现
+ */
 @Service
 @RequiredArgsConstructor
 public class NoteServiceImpl implements INoteService {
@@ -53,11 +58,14 @@ public class NoteServiceImpl implements INoteService {
     @Transactional(readOnly = true)
     public NoteVO getById(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "User not authenticated");
+        }
         NotePO po = noteRepository.selectById(id);
         if (po == null) {
             throw new BusinessException(404, "Note not found");
         }
-        if (!po.getUserId().equals(currentUser.getId())) {
+        if (!Objects.equals(po.getUserId(), currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to view this note");
         }
         return noteMapper.poToVo(po);
@@ -67,17 +75,20 @@ public class NoteServiceImpl implements INoteService {
     @Transactional
     public NoteVO update(Long id, NoteDTO dto) {
         User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "User not authenticated");
+        }
         NotePO po = noteRepository.selectById(id);
         if (po == null) {
             throw new BusinessException(404, "Note not found");
         }
-        if (!po.getUserId().equals(currentUser.getId())) {
+        if (!Objects.equals(po.getUserId(), currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to update this note");
         }
         po.setTitle(dto.getTitle());
         po.setContent(dto.getContent());
         if (dto.getCategory() != null) po.setCategory(dto.getCategory());
-        if (dto.getTags() != null) po.setTags(dto.getTags());
+        if (dto.getAttachments() != null) po.setAttachments(dto.getAttachments());
         noteRepository.updateById(po);
         return noteMapper.poToVo(po);
     }
@@ -86,22 +97,16 @@ public class NoteServiceImpl implements INoteService {
     @Transactional
     public void delete(Long id) {
         User currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new BusinessException(401, "User not authenticated");
+        }
         NotePO po = noteRepository.selectById(id);
         if (po == null) {
             throw new BusinessException(404, "Note not found");
         }
-        if (!po.getUserId().equals(currentUser.getId())) {
+        if (!Objects.equals(po.getUserId(), currentUser.getId())) {
             throw new BusinessException(403, "You are not authorized to delete this note");
         }
         noteRepository.deleteById(po.getId());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<NoteVO> search(String keyword, Pageable pageable) {
-        User currentUser = SecurityUtils.getCurrentUser();
-        IPage<NotePO> poPage = noteRepository.findByUserIdAndTitleContainingIgnoreCaseAndIsDeletedFalse(
-                MybatisPlusPageUtils.toMpPage(pageable), currentUser.getId(), keyword);
-        return noteMapper.poPageToVoPage(MybatisPlusPageUtils.toSpringPage(poPage, pageable));
     }
 }

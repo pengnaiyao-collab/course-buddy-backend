@@ -1,0 +1,9 @@
+-- 移除笔记的 DRAFT 状态
+
+UPDATE notes
+SET status = 'PUBLISHED'
+WHERE status = 'DRAFT';
+
+ALTER TABLE notes
+  MODIFY COLUMN status VARCHAR(16) NOT NULL DEFAULT 'PUBLISHED'
+  COMMENT 'PUBLISHED/ARCHIVED（已发布/已归档）';

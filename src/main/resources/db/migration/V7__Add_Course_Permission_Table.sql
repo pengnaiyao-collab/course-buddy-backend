@@ -1,4 +1,4 @@
--- V7: Add course permission levels (L1-L4)
+-- V7：新增课程权限等级（L1-L4）
 
 CREATE TABLE IF NOT EXISTS course_permissions (
     id               BIGINT      NOT NULL AUTO_INCREMENT,

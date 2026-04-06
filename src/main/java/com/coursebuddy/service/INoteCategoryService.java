@@ -5,6 +5,9 @@ import com.coursebuddy.domain.vo.NoteCategoryVO;
 
 import java.util.List;
 
+/**
+ * 笔记分类服务
+ */
 public interface INoteCategoryService {
     NoteCategoryVO create(NoteCategoryDTO dto);
     List<NoteCategoryVO> listMy();

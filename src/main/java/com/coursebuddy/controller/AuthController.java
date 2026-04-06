@@ -2,14 +2,15 @@ package com.coursebuddy.controller;
 
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.common.response.ApiResponse;
-import com.coursebuddy.domain.dto.ChangePasswordDTO;
 import com.coursebuddy.domain.dto.LoginDTO;
 import com.coursebuddy.domain.dto.RefreshTokenDTO;
 import com.coursebuddy.domain.dto.RegisterDTO;
+import com.coursebuddy.domain.po.UserPO;
 import com.coursebuddy.domain.vo.LoginResponseVO;
 import com.coursebuddy.domain.vo.RefreshTokenResponseVO;
 import com.coursebuddy.domain.vo.RegisterResponseVO;
 import com.coursebuddy.domain.vo.UserVO;
+import com.coursebuddy.mapper.UserMapper;
 import com.coursebuddy.service.IAuthService;
 import com.coursebuddy.service.ITokenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +35,7 @@ public class AuthController {
 
     private final IAuthService authService;
     private final ITokenService tokenService;
+    private final UserMapper userMapper;
 
     /**
      * 用户登录接口
@@ -95,24 +97,6 @@ public class AuthController {
     }
 
     /**
-     * 修改密码接口
-     * 验证用户旧密码，若正确则更新为新密码并使所有历史 Token 失效
-     *
-     * @param authHeader 携带 Bearer Token 的 Authorization 头
-     * @param changePasswordDto 包含旧密码和新密码的请求体
-     * @return 空数据的成功响应
-     */
-    @Operation(summary = "修改密码", description = "修改密码成功后会使所有已下发的 Token 失效")
-    @PostMapping("/change-password")
-    public ApiResponse<Void> changePassword(
-            @RequestHeader("Authorization") String authHeader,
-            @Valid @RequestBody ChangePasswordDTO changePasswordDto) {
-        Long userId = extractUserIdFromHeader(authHeader);
-        authService.changePassword(userId, changePasswordDto);
-        return ApiResponse.success("密码修改成功", null);
-    }
-
-    /**
      * 获取当前登录用户信息接口
      * 解析请求头中的 Token 获取 userId，并返回详细的用户信息 (脱敏)
      *
@@ -130,10 +114,11 @@ public class AuthController {
     /**
      * 辅助方法：从 Authorization 提取用户 ID
      * 验证 Token 格式是否合法，并解析出内置的 userId
+     * 同时检查用户账户是否被锁定
      *
      * @param authHeader HTTP 请求头中的 Authorization 字段
      * @return 解析出的用户 ID
-     * @throws BusinessException 当 Token 缺失、格式不合法或过期时抛出异常
+     * @throws BusinessException 当 Token 缺失、格式不合法、过期或用户被锁定时抛出异常
      */
     private Long extractUserIdFromHeader(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -144,6 +129,16 @@ public class AuthController {
         if (userId == null) {
             throw new BusinessException("无效或已过期的 Token");
         }
+        
+        // 检查用户账户是否被锁定或禁用
+        UserPO user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(401, "用户不存在");
+        }
+        if (Boolean.TRUE.equals(user.getIsLocked())) {
+            throw new BusinessException(403, "用户账户已被锁定");
+        }
+        
         return userId;
     }
 }

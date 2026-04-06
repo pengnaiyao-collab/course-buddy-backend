@@ -1,7 +1,7 @@
--- V13__Enhance_File_Upload_Category.sql
+-- V13：上传分类增强
 
--- Add category support for upload records so frontend classification
--- can be stored and retrieved reliably.
+-- 为上传记录增加分类支持，方便前端分类
+-- 可被可靠存储与读取。
 ALTER TABLE file_uploads
     ADD COLUMN category VARCHAR(64) NULL AFTER content_type;
 

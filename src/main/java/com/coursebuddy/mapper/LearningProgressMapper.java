@@ -11,6 +11,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 进度映射器
+ */
 @Mapper
 public interface LearningProgressMapper extends BaseMapper<LearningProgressPO> {
 

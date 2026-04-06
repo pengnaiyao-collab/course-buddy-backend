@@ -2,7 +2,6 @@ package com.coursebuddy.service.impl;
 
 import com.coursebuddy.common.exception.BusinessException;
 import com.coursebuddy.common.exception.ResourceNotFoundException;
-import com.coursebuddy.domain.dto.ChangePasswordDTO;
 import com.coursebuddy.domain.dto.LoginDTO;
 import com.coursebuddy.domain.dto.RefreshTokenDTO;
 import com.coursebuddy.domain.dto.RegisterDTO;
@@ -24,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * 认证与授权服务实现类
@@ -69,6 +69,12 @@ public class AuthServiceImpl implements IAuthService {
         if (Boolean.TRUE.equals(user.getIsLocked())) {
             throw new BusinessException("该用户账户已被锁定");
         }
+        if ("PENDING".equals(user.getStatus())) {
+            throw new BusinessException("您的教师账号正在审核中，请耐心等待管理员通过");
+        }
+        if ("REJECTED".equals(user.getStatus())) {
+            throw new BusinessException("教师账号审核未通过，请联系管理员");
+        }
 
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.updateById(user);
@@ -92,24 +98,52 @@ public class AuthServiceImpl implements IAuthService {
      */
     @Override
     public RegisterResponseVO register(RegisterDTO registerDto) {
-        log.info("用户尝试注册: {}", registerDto.getUsername());
+        log.info("用户尝试注册: {}, 请求角色: {}", registerDto.getUsername(), registerDto.getRole());
 
         if (usernameExists(registerDto.getUsername())) {
             throw new BusinessException("用户名已存在");
         }
-        if (emailExists(registerDto.getEmail())) {
-            throw new BusinessException("该邮箱已被注册");
-        }
 
         UserPO user = userMapper.registerDtoToPo(registerDto);
+        
+        // 规范化角色标识，确保不为空且统一为大写
+        String roleStr = registerDto.getRole();
+        if (roleStr == null || roleStr.trim().isEmpty()) {
+            roleStr = "STUDENT";
+        } else {
+            roleStr = roleStr.trim().toUpperCase();
+            if (roleStr.startsWith("ROLE_")) {
+                roleStr = roleStr.substring(5);
+            }
+        }
+
+        if (!List.of("STUDENT", "TEACHER").contains(roleStr)) {
+            throw new BusinessException(403, "注册时不允许选择该角色");
+        }
+
+        user.setRole(roleStr);
+
+        if ("TEACHER".equals(roleStr)) {
+            user.setStatus("PENDING");
+            log.info("教师账号已注册，待管理员审核: {}", user.getUsername());
+        } else {
+            user.setStatus("ACTIVE");
+            log.info("学生账号注册成功并已激活: {}", user.getUsername());
+        }
+        
         userRepository.insert(user);
-        UserPO savedUser = user;
-        log.info("用户注册成功: {}", savedUser.getId());
+        log.info("用户入库成功: ID={}, Username={}, Role={}, Status={}", 
+                user.getId(), user.getUsername(), user.getRole(), user.getStatus());
+
+        String registerMessage = "注册成功，欢迎加入课伴！";
+        if ("TEACHER".equals(roleStr)) {
+            registerMessage = "注册成功，教师账号待管理员审核";
+        }
 
         return RegisterResponseVO.builder()
-                .user(userMapper.poToVo(savedUser))
-                .message("注册成功，请登录")
-                .build();
+            .user(userMapper.poToVo(user))
+            .message(registerMessage)
+            .build();
     }
 
     /**
@@ -147,38 +181,6 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     /**
-     * 处理修改密码逻辑
-     * 1. 验证用户是否存在
-     * 2. 校验旧密码是否匹配
-     * 3. 将新密码加密后更新入库
-     * 4. 撤销用户所有历史 Token，强制重新登录
-     *
-     * @param userId 当前用户 ID
-     * @param changePasswordDto 包含旧密码和新密码的 DTO
-     * @throws ResourceNotFoundException 用户不存在时抛出
-     * @throws BusinessException 旧密码错误时抛出
-     */
-    @Override
-    public void changePassword(Long userId, ChangePasswordDTO changePasswordDto) {
-        log.info("用户修改密码: {}", userId);
-
-        UserPO user = userRepository.selectById(userId);
-        if (user == null) {
-            throw new ResourceNotFoundException("找不到该用户");
-        }
-
-        if (!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())) {
-            throw new BusinessException("旧密码不正确");
-        }
-
-        user.setPassword(passwordEncoder.encode(changePasswordDto.getNewPassword()));
-        userRepository.updateById(user);
-
-        tokenService.revokeAllUserTokens(userId);
-        log.info("密码修改成功，已撤销该用户所有活跃 Token: {}", userId);
-    }
-
-    /**
      * 获取当前登录用户信息
      *
      * @param userId 当前用户 ID
@@ -205,8 +207,7 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional(readOnly = true)
     public UserPO getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("找不到该用户"));
+        return null;
     }
 
     @Override
@@ -218,6 +219,6 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     @Transactional(readOnly = true)
     public boolean emailExists(String email) {
-        return userRepository.existsByEmail(email);
+        return false;
     }
 }

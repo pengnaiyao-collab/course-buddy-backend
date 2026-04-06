@@ -1,6 +1,6 @@
 # JVM 参数调优指南
 
-本文档针对 Course Buddy Backend（Spring Boot 3.2.2 / Java 17 / eclipse-temurin:17-jre-alpine）在容器化环境中的 JVM 调优实践。
+本文档针对 课伴 Backend（Spring Boot 3.2.2 / Java 17 / eclipse-temurin:17-jre-alpine）在容器化环境中的 JVM 调优实践。
 
 ---
 
@@ -82,7 +82,7 @@ USER appuser
 
 ### 3.1 Java 17 默认 GC：G1GC
 
-Java 17 默认使用 G1 GC（Garbage First），适合低延迟、大堆场景。Course Buddy 以 Web API 请求为主，G1GC 是合适的默认选择。
+Java 17 默认使用 G1 GC（Garbage First），适合低延迟、大堆场景。课伴 以 Web API 请求为主，G1GC 是合适的默认选择。
 
 ```bash
 # 验证当前使用的 GC
@@ -149,7 +149,7 @@ docker exec course-buddy-app java -XX:+PrintCommandLineFlags -version 2>&1 | gre
 
 ### 4.2 Spring Boot 应用典型内存分布
 
-对于 Course Buddy（含 MyBatis-Plus、Redis、MinIO、WebSocket 等组件）：
+对于 课伴（含 MyBatis-Plus、Redis、MinIO、SSE 等组件）：
 
 ```
 启动后稳定内存（容器 1GB 时）：
@@ -207,7 +207,7 @@ docker cp course-buddy-app:/app/logs/heapdump.hprof ./heapdump.hprof
 
 ### 5.1 Tomcat 线程池
 
-Course Buddy 使用 Spring Boot 内嵌 Tomcat，默认最大 200 个工作线程：
+课伴 使用 Spring Boot 内嵌 Tomcat，默认最大 200 个工作线程：
 
 ```yaml
 # application.yml 中添加

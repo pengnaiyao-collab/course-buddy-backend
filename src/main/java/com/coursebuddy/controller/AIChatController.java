@@ -2,7 +2,6 @@ package com.coursebuddy.controller;
 
 import com.coursebuddy.common.response.ApiResponse;
 import com.coursebuddy.domain.dto.ChatRequestDTO;
-import com.coursebuddy.domain.vo.AiUsageStatsVO;
 import com.coursebuddy.domain.vo.ChatMessageVO;
 import com.coursebuddy.domain.vo.ChatResponseVO;
 import com.coursebuddy.domain.vo.ConversationVO;
@@ -21,6 +20,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
+/**
+ * AI聊天控制器
+ */
 @Tag(name = "AI Chat", description = "通用 AI 对话接口")
 @RestController
 @RequestMapping("/v1/ai")
@@ -64,11 +66,5 @@ public class AIChatController {
     public ApiResponse<Void> deleteConversation(@PathVariable Long id) {
         aiChatService.deleteConversation(id);
         return ApiResponse.success(null);
-    }
-
-    @Operation(summary = "获取 AI 使用统计", security = @SecurityRequirement(name = "bearerAuth"))
-    @GetMapping("/usage-stats")
-    public ApiResponse<Page<AiUsageStatsVO>> getUsageStats(@PageableDefault(size = 20) Pageable pageable) {
-        return ApiResponse.success(aiChatService.getUsageStats(pageable));
     }
 }

@@ -4,6 +4,9 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 考勤传输对象
+ */
 @Data
 public class AttendanceMarkDTO {
     private LocalDate sessionDate;

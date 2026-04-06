@@ -12,6 +12,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 考勤映射器
+ */
 @Mapper
 public interface AttendanceMapper extends BaseMapper<AttendancePO> {
 
@@ -21,11 +24,14 @@ public interface AttendanceMapper extends BaseMapper<AttendancePO> {
     @Select("SELECT * FROM attendances WHERE course_id = #{courseId}")
     IPage<AttendancePO> findByCourseId(Page<AttendancePO> page, @Param("courseId") Long courseId);
 
-    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND session_date = #{sessionDate}")
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND session_date = #{sessionDate} ORDER BY student_id")
     List<AttendancePO> findByCourseIdAndSessionDate(@Param("courseId") Long courseId, @Param("sessionDate") LocalDate sessionDate);
 
     @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId} AND session_date = #{sessionDate}")
     Optional<AttendancePO> findByCourseIdAndStudentIdAndSessionDate(@Param("courseId") Long courseId, @Param("studentId") Long studentId, @Param("sessionDate") LocalDate sessionDate);
+
+    @Select("SELECT * FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId} AND session_date = #{sessionDate} ORDER BY updated_at DESC, id DESC")
+    List<AttendancePO> findByCourseIdAndStudentIdAndSessionDateList(@Param("courseId") Long courseId, @Param("studentId") Long studentId, @Param("sessionDate") LocalDate sessionDate);
 
     @Select("SELECT COUNT(*) FROM attendances WHERE course_id = #{courseId} AND student_id = #{studentId}")
     long countByCourseIdAndStudentId(@Param("courseId") Long courseId, @Param("studentId") Long studentId);

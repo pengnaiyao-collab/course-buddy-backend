@@ -8,6 +8,9 @@ import org.springframework.data.domain.Pageable;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 组件
+ */
 public final class MybatisPlusPageUtils {
 
     private MybatisPlusPageUtils() {

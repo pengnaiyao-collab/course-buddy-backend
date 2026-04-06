@@ -9,6 +9,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 笔记版本映射器
+ */
 @Mapper
 public interface NoteVersionMapper extends BaseMapper<NoteVersionPO> {
 

@@ -3,6 +3,9 @@ package com.coursebuddy.common.response;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 响应
+ */
 @Data
 @NoArgsConstructor
 public class ApiResponse<T> {

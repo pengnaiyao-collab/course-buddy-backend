@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会话视图对象
+ */
 @Data
 @Builder
 public class ConversationVO {

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 会话消息持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,6 +23,9 @@ public class ConversationMessagePO {
     private Long conversationId;
     private String role;
     private String content;
+    private String imageData;
+    private String imageMimeType;
+    private String imageName;
     private Integer tokenCount;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;

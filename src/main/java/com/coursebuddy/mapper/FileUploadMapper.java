@@ -8,6 +8,9 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.Optional;
 
+/**
+ * 文件上传映射器
+ */
 @Mapper
 public interface FileUploadMapper extends BaseMapper<FileUploadPO> {
 

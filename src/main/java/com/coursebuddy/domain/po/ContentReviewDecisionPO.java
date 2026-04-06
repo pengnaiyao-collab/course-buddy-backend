@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * 内容审核决策持久化对象
+ */
 @TableName("content_review_decisions")
 @Data
 @Builder

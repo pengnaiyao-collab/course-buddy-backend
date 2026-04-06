@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+/**
+ * 作业提交持久化对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,7 +20,7 @@ public class AssignmentSubmissionPO {
     private String submissionUrl;
     private LocalDateTime submittedAt;
 
-    private Integer score;
+    private Double score;
     private String feedback;
     private LocalDateTime gradedAt;
     private Long gradedBy;

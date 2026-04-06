@@ -1,6 +1,6 @@
 # macOS 开发环境搭建指南
 
-本文档详细说明如何在 macOS 系统上搭建 Course Buddy Backend 本地开发环境。
+本文档详细说明如何在 macOS 系统上搭建 课伴 Backend 本地开发环境。
 
 ---
 
@@ -337,8 +337,7 @@ java -XshowSettings:all -version 2>&1 | grep "os.arch"
 # os.arch = aarch64  (Apple Silicon)
 # os.arch = x86_64   (Intel 或 Rosetta)
 
-# 某些 native 依赖（如 Tess4J OCR）在 ARM 上需要额外配置
-# 如遇 OCR 功能异常，在 dev 环境可通过配置禁用
+# 某些 native 依赖在 ARM 上可能需要额外配置
 ```
 
 ---

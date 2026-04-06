@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 用户资料传输对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,8 +18,7 @@ public class UserProfileDTO {
     @Size(max = 50, message = "Real name must not exceed 50 characters")
     private String realName;
 
-    @Size(max = 20, message = "Phone must not exceed 20 characters")
-    private String phone;
+    private String school;
 
     private String bio;
 }

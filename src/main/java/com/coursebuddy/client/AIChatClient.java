@@ -9,6 +9,9 @@ import dev.langchain4j.model.output.TokenUsage;
 
 import java.util.List;
 
+/**
+ * AI聊天客户端
+ */
 public class AIChatClient {
 
     private final ChatModel chatModel;

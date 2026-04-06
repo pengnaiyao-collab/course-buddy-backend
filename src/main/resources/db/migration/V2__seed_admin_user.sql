@@ -1,12 +1,12 @@
--- V2__seed_admin_user.sql
--- Seed initial admin user
--- Password: Admin@123 (BCrypt encoded)
+-- V2：初始化管理员用户
+-- 初始化管理员用户
+-- 密码：Admin@123（BCrypt 加密后的正确哈希）
 
 INSERT INTO users (username, email, password, full_name, role, enabled, created_at, updated_at)
 VALUES (
     'admin',
     'admin@coursebuddy.com',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$uFdbNeg47/0L97psSAV8N.WV9r//tl2tCDNLMfdLcFUfPq5BtlKTS',
     'System Administrator',
     'ADMIN',
     1,

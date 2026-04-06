@@ -11,12 +11,15 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 成绩成绩单映射器
+ */
 @Mapper
 public interface GradeSheetMapper extends BaseMapper<GradeSheetPO> {
 
     @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId} AND student_id = #{studentId}")
     Optional<GradeSheetPO> findByCourseIdAndStudentId(@Param("courseId") Long courseId, @Param("studentId") Long studentId);
 
-    @Select("SELECT * FROM grade_sheets WHERE course_id = #{courseId}")
+    @Select("SELECT gs.* FROM grade_sheets gs JOIN users u ON u.id = gs.student_id WHERE gs.course_id = #{courseId} AND u.role = 'STUDENT'")
     IPage<GradeSheetPO> findByCourseId(Page<GradeSheetPO> page, @Param("courseId") Long courseId);
 }

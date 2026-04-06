@@ -11,6 +11,9 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 课时映射器
+ */
 @Mapper
 public interface LessonMapper extends BaseMapper<LessonPO> {
 

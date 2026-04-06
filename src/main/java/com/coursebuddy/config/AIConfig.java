@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class AIConfig {
 
-    private static final long CLEANUP_INTERVAL_MS = 3_600_000L; // 1 hour
+    private static final long CLEANUP_INTERVAL_MS = 3_600_000L; // 1 小时
 
     private final AIResponseCache aiResponseCache;
     private final RateLimiter rateLimiter;
@@ -30,7 +30,7 @@ public class AIConfig {
     /** 每小时清理过期缓存和速率限制器桶 */
     @Scheduled(fixedDelay = CLEANUP_INTERVAL_MS)
     public void cleanupExpiredEntries() {
-        log.debug("Running scheduled cleanup for AI cache and rate limiter");
+        log.debug("AI 缓存与限流器定时清理执行中");
         aiResponseCache.evictExpired();
         rateLimiter.cleanup();
     }

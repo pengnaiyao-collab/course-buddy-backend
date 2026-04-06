@@ -1,6 +1,6 @@
--- V5__Add_FileUpload_Audit_Version_Tables.sql
+-- V5：新增文件上传、审计、版本相关表
 
--- File upload records
+-- 文件上传记录
 CREATE TABLE IF NOT EXISTS file_uploads (
     id          BIGINT       NOT NULL AUTO_INCREMENT,
     object_name VARCHAR(500) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS file_uploads (
     INDEX idx_file_uploads_uploaded_at (uploaded_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Version records
+-- 版本记录
 CREATE TABLE IF NOT EXISTS versions (
     id             BIGINT       NOT NULL AUTO_INCREMENT,
     entity_type    VARCHAR(100) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS versions (
     INDEX idx_versions_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Content review records
+-- 内容审核记录
 CREATE TABLE IF NOT EXISTS content_reviews (
     id           BIGINT       NOT NULL AUTO_INCREMENT,
     content_type VARCHAR(100) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS content_reviews (
     INDEX idx_content_reviews_reviewer (reviewer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Audit logs
+-- 审计日志
 CREATE TABLE IF NOT EXISTS audit_logs (
     id            BIGINT       NOT NULL AUTO_INCREMENT,
     entity_type   VARCHAR(100) NOT NULL,

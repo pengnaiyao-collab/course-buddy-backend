@@ -11,6 +11,9 @@ import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
+/**
+ * 课程讨论映射器
+ */
 @Mapper
 public interface CourseDiscussionMapper extends BaseMapper<CourseDiscussionPO> {
 
@@ -22,7 +25,4 @@ public interface CourseDiscussionMapper extends BaseMapper<CourseDiscussionPO> {
 
     @Select("SELECT COUNT(*) FROM course_discussions WHERE course_id = #{courseId} AND parent_id IS NULL AND is_deleted = false")
     long countByCourseIdAndParentIdIsNullAndIsDeletedFalse(@Param("courseId") Long courseId);
-
-    @Update("UPDATE course_discussions SET like_count = like_count + 1 WHERE id = #{id}")
-    int incrementLikeCount(@Param("id") Long id);
 }

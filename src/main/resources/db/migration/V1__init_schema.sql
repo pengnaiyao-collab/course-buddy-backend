@@ -1,5 +1,5 @@
--- V1__init_schema.sql
--- Initial database schema for Course Buddy
+-- V1：初始化数据库结构
+-- 课伴数据库初始结构
 
 CREATE TABLE IF NOT EXISTS users (
     id          BIGINT          NOT NULL AUTO_INCREMENT,

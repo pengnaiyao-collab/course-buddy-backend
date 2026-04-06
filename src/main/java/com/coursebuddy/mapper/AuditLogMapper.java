@@ -10,6 +10,9 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
+/**
+ * 审计日志映射器
+ */
 @Mapper
 public interface AuditLogMapper extends BaseMapper<AuditLogPO> {
 

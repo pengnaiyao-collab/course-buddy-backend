@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 版本差异视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,10 +19,10 @@ public class VersionDiffVO {
     private Long entityId;
     private int versionA;
     private int versionB;
-    /** Unified diff format as a list of lines */
+    /** 统一差异格式（Unified Diff）的逐行列表 */
     private List<String> diffLines;
-    /** Number of added lines */
+    /** 新增行数 */
     private long addedLines;
-    /** Number of removed lines */
+    /** 删除行数 */
     private long removedLines;
 }

@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * 认证响应视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,7 +20,7 @@ public class AuthResponseVO {
     private String tokenType;
     private Long userId;
     private String username;
-    private String email;
+    private String realName;
     private Role role;
 
     public static AuthResponseVO of(String token, User user) {
@@ -26,7 +29,7 @@ public class AuthResponseVO {
                 .tokenType("Bearer")
                 .userId(user.getId())
                 .username(user.getUsername())
-                .email(user.getEmail())
+                .realName(user.getRealName())
                 .role(user.getRole())
                 .build();
     }

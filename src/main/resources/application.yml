@@ -6,16 +6,14 @@ spring:
   # MyBatis-Plus 配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: com.coursebuddy.domain.po
+  type-aliases-package: com.coursebuddy.domain.po,com.coursebuddy.domain.auth
+  type-enums-package: com.coursebuddy.domain.auth
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deletedAt
-      logic-delete-value: "NOW()"
-      logic-not-delete-value: "NULL"
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -29,19 +27,33 @@ server:
   port: 8080
   servlet:
     context-path: /api
+  error:
+    # 禁用 Spring Boot 默认的错误视图，防止 Tomcat 在响应已提交时尝试处理错误
+    include-message: on_param
+    include-stacktrace: never
+    include-exception: false
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
 
-# MinIO configuration
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+
+# MinIO 配置
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   accessKey: ${MINIO_ACCESS_KEY:minioadmin}
   secretKey: ${MINIO_SECRET_KEY:minioadmin}
   bucketName: ${MINIO_BUCKET:course-buddy}
-  maxFileSize: 1073741824  # 1 GB in bytes
-  chunkSize: 5242880       # 5 MB in bytes
+  maxFileSize: 1073741824  # 1 GB（字节）
+  chunkSize: 5242880       # 5 MB（字节）
 
 jwt:
-  # IMPORTANT: Override JWT_SECRET environment variable in production with a strong random secret (min 32 chars)
-  secret: ${JWT_SECRET:course-buddy-super-secret-key-for-jwt-token-signing-at-least-256-bits}
+  # 重要：生产环境请通过 JWT_SECRET 覆盖为强随机密钥（至少 32 位）
+  secret: ${JWT_SECRET:}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:3600}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800}
   expiration: 86400000
 
 springdoc:
@@ -73,10 +85,6 @@ note:
       body-font-size: 11
       # 标题字号，默认 16
       title-font-size: 16
-    # Markdown 导出配置
-    markdown:
-      # Markdown 文件编码，默认 UTF-8
-      charset: UTF-8
   # 版本历史：保留的最大版本数（0 = 不限制）；
   # 如需自动清理旧版本，请将此值设置为大于 0 的整数
   version:
@@ -91,12 +99,12 @@ ai:
   provider: "aliyun-bailian"
   baseUrl: "${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}"
   apiKey: "${AI_API_KEY:}"
-  model: "${AI_MODEL:qwen-plus}"
-  systemPrompt: "你是 Course Buddy 的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。"
+  model: "${AI_MODEL:qwen-vl-plus}"
+  systemPrompt: "你是课伴的 AI 学习助教，请优先给出准确、结构化、适合教学场景的回答。"
   maxTokens: 2048
   temperature: 0.7
   topP: 0.8
-  timeout: 30000
+  timeout: 120000
   retryCount: 3
   rateLimitPerMinute: 60
   cacheTtl: 3600
@@ -107,3 +115,4 @@ ai:
   logResponses: false
   maxContextMessages: 20
   maxSourceItems: 3
+
